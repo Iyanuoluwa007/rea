@@ -2650,6 +2650,10 @@ main:not(.container) > .translation-notice {
   margin-inline: auto;
 }
 @media (max-width: 640px) {
+  .language-list {
+    right: auto;
+    left: 0;
+  }
   .language-current {
     position: absolute;
     width: 1px;
@@ -2660,5 +2664,11 @@ main:not(.container) > .translation-notice {
   }
   main:not(.container) > .translation-notice {
     width: calc(100% - 2.5rem);
+  }
+}
+/* The language menu adds a fourth header button; make room beside the brand. */
+@media (max-width: 359px) {
+  .header-social:has(.language-menu) .nav-github-count {
+    display: none;
   }
 }
