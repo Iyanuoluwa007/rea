@@ -99,6 +99,12 @@ const scenarioFor = (browser, origin) =>
     capture: { after_each_step: ["dom"], at_end: ["dom"] },
   });
 
+const storageStart = Date.now();
+const stage = (name) =>
+  process.stderr.write(
+    `[verify:browser:storage] ${name} +${String(Date.now() - storageStart)}ms\n`,
+  );
+
 const raceWithTimeout = (operation, timeoutMs, onTimeout = () => undefined) => {
   const controller = new AbortController();
   return Promise.race([
@@ -175,6 +181,8 @@ const startStorageSite = async () => {
   return {
     origin: `http://127.0.0.1:${port}`,
     close: async () => {
+      // The external browser outlives this site and can keep sockets open.
+      server.closeAllConnections();
       server.close();
       await once(server, "close");
     },
@@ -200,8 +208,11 @@ export async function verifyScenarioStorage({
 }) {
   const site = await startStorageSite();
   try {
+    stage("launch");
     await verifyLaunchStorage(executable, site.origin);
+    stage("connect");
     await verifyConnectedStorage(endpoint, targetId, site.origin);
+    stage("close");
     return {
       mocked: false,
       launch: true,
@@ -224,6 +235,7 @@ const verifyLaunchStorage = async (executable, origin) => {
     origin,
   );
   const profilesBefore = await scenarioProfiles();
+  stage("launch: scenario CLI");
   const result = await runScenarioCli(scenario);
   const capture = result.normalized_result;
   assert.ok(capture, "Launch-mode storage scenario returned no result");
@@ -236,6 +248,7 @@ const verifyLaunchStorage = async (executable, origin) => {
     ...scenario,
     actions: [scenario.actions[0]],
   });
+  stage("launch: fresh in-process scenario");
   const fresh = await createBrowserScenarioProvider(
     process.env,
   ).captureScenario(freshScenario);
@@ -297,7 +310,9 @@ const verifyConnectedStorage = async (endpoint, targetId, origin) => {
     "capture_browser_scenario",
   );
   try {
+    stage("connect: storage partition");
     await assertStorageKeyPartition(observer, origin);
+    stage("connect: scenario CLI");
     const result = await runScenarioCli(scenario);
     const capture = result.normalized_result;
     assert.ok(capture, "Connect-mode storage scenario returned no result");
@@ -308,9 +323,12 @@ const verifyConnectedStorage = async (endpoint, targetId, origin) => {
       empty: "main-empty-seed",
     });
     assert.equal(capture.browser.cleanup, "disconnected-external");
+    stage("connect: caller debugger pause");
     await verifyCallerDebuggerPause(observer, origin, scenario);
+    stage("connect: cancellation");
     await verifyCancelledStorage(observer, endpoint, targetId, scenario);
   } finally {
+    stage("connect: restore target");
     await raceWithTimeout(restoreTarget(observer, target.url), 1_000).catch(
       () => undefined,
     );

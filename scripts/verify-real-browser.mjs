@@ -53,6 +53,12 @@ const SCENARIO_URL_SECRET_VALUE = "rea-browser-url-verifier-secret";
 process.env.REA_BROWSER_VERIFIER_SECRET = SCENARIO_SECRET_VALUE;
 process.env.REA_BROWSER_VERIFIER_URL = SCENARIO_URL_SECRET_VALUE;
 const verifierRun = createVerifierRun();
+const verifierStart = Date.now();
+// Stage markers locate a stalled step when CI cancels the job at its limit.
+const stage = (name) =>
+  process.stderr.write(
+    `[verify:browser] ${name} +${String(Date.now() - verifierStart)}ms\n`,
+  );
 
 const executable = await browserExecutable();
 const profile = await mkdtemp(join(tmpdir(), "rea-real-browser-"));
@@ -109,6 +115,7 @@ try {
   );
   if (!observed.ok) throw observed.error;
   assertObservation(observed.value, site.origin);
+  stage("verifyBrowserDomDestinations");
   const domDestinations = await verifyBrowserDomDestinations({
     cdp_endpoint: endpoint,
     target_id: target,
@@ -168,6 +175,7 @@ try {
     );
   assertSensitiveShapes(withSource.value);
 
+  stage("verifyPublicBundle");
   const bundle = await verifyPublicBundle(endpoint, target, site.origin);
 
   const captureDiff = await provider.compareCaptures(
@@ -231,6 +239,7 @@ try {
     throw new Error("Real Chrome same-origin SPA timeline was missing");
 
   pageProxy = await startPageCdpProxy(endpoint);
+  stage("verifyPageScopedTransport");
   await verifyPageScopedTransport(provider, pageProxy, site.origin);
   const attachedScenarioInput = browserScenario(
     {
@@ -277,16 +286,19 @@ try {
     throw new Error("Scenario attachment terminated its external browser");
 
   const profilesBefore = await scenarioProfiles();
+  stage("verifyScenarioEnvironment");
   const scenarioEnvironment = await verifyScenarioEnvironment(
     endpoint,
     target,
     site.origin,
   );
+  stage("verifyScenarioStorage");
   const scenarioStorage = await verifyScenarioStorage({
     executable,
     endpoint,
     targetId: target,
   });
+  stage("launchedScenario");
   const launchedScenario = await createBrowserScenarioProvider(
     process.env,
   ).captureScenario(
@@ -308,6 +320,7 @@ try {
   if ([...profilesAfter].some((entry) => !profilesBefore.has(entry)))
     throw new Error("Scenario launch retained a temporary browser profile");
   assertScenarioCapture(launchedScenario.value);
+  stage("verifyScenarioFailureEvidence");
   const scenarioFailure = await verifyScenarioFailureEvidence(
     executable,
     site.origin,
@@ -339,18 +352,24 @@ try {
         `Browser scenario included unselected structured value: ${unselectedValue}`,
       );
 
+  stage("verifyLargeScreenshotE2e");
   const largeScreenshot = await verifyLargeScreenshotE2e(endpoint, site.origin);
+  stage("verifyPopupEventCoverage");
   const popupEvents = await verifyPopupEventCoverage(executable);
+  stage("verifyBrowserNetworkEvidence");
   const networkEvidence = await verifyBrowserNetworkEvidence(
     executable,
     undefined,
     { cdp_endpoint: endpoint, target_id: target },
   );
+  stage("verifyBrowserScriptExport");
   const scriptExport = await verifyBrowserScriptExport(executable, undefined, {
     cdp_endpoint: endpoint,
     target_id: target,
   });
+  stage("verifyBrowserModules");
   const moduleTrace = await verifyBrowserModules(executable);
+  stage("verifyBrowserCaptureMetadataBudget");
   const captureMetadata = await verifyBrowserCaptureMetadataBudget(endpoint);
   report = {
     browser: observed.value.browser.product,
@@ -393,6 +412,7 @@ try {
   process.stderr.write("Browser verifier cleanup: stopping owned Chrome\n");
   if (browser !== undefined) await stopProcess(browser);
   process.stderr.write("Browser verifier cleanup: closing fixture site\n");
+  stage("cleanup");
   await site.close();
   await rm(profile, {
     recursive: true,
