@@ -47,6 +47,7 @@ import { collectJavaScriptDerivedSemanticsSteps } from "./javascriptSemanticDeri
 import { evaluateSemanticProvenance } from "./javascriptSemanticValues.js";
 import {
   collectElectronMemberWritesSteps,
+  electronExportPath,
   electronMemberPath,
   ELECTRON_MODULE,
 } from "./javascriptElectronMemberWrites.js";
@@ -58,6 +59,8 @@ import {
   parseJavaScriptSource,
   type ParsedJavaScriptSource,
 } from "./javascriptSourceParser.js";
+
+import { isJavaScriptRpcClientFactory } from "./javascriptRpcEndpoints.js";
 
 interface BindPatternInput {
   readonly pattern: t.Node;
@@ -179,6 +182,40 @@ export function* analyzeParsedJavaScriptSemanticsSteps(
       "Cross-function mutation and dynamic property resolution remain unknown.",
     ],
   };
+}
+
+/** Resolve tRPC client roots by lexical identity, excluding overwritten bindings. */
+export function* classifyParsedJavaScriptRpcClientRootsSteps(
+  file: ParsedJavaScriptSource,
+): Generator<void, ReadonlySet<t.Node>> {
+  const state = createState(file.program);
+  yield* collectDefinitionsSteps(file.program, state);
+  const roots = new Set<t.Node>();
+  const clients = new Map<string, boolean>();
+  yield* traverseJavaScriptAstSteps(file.program, {
+    enter: (node) => {
+      if (!t.isMemberExpression(node) && !t.isOptionalMemberExpression(node))
+        return;
+      const root = node.object;
+      if (!t.isIdentifier(root)) return;
+      const binding = resolveSemanticBindingState(state, root, root.name);
+      if (binding === undefined) return;
+      let client = clients.get(binding.bindingId);
+      if (client === undefined) {
+        const [initializer] = binding.initializers;
+        client =
+          initializer !== undefined &&
+          initializer.projection.length === 0 &&
+          binding.initializers.length === 1 &&
+          !binding.definitions.some(({ kind }) => kind === "assignment") &&
+          !state.conditionalInitializers.has(initializer.node) &&
+          isJavaScriptRpcClientFactory(initializer.node);
+        clients.set(binding.bindingId, client);
+      }
+      if (client) roots.add(root);
+    },
+  });
+  return roots;
 }
 
 /** Receiver identity facts for the overloaded `.open` syntax only. */
@@ -349,7 +386,7 @@ export function* classifyParsedJavaScriptElectronBindingsSteps(
     }
     const origin = semanticRequireOrigin(root, state);
     return origin !== undefined && ELECTRON_MODULE.test(origin.specifier)
-      ? origin.importedPath
+      ? electronExportPath(origin.importedPath)
       : undefined;
   };
   const writes = yield* collectElectronMemberWritesSteps(
@@ -400,7 +437,7 @@ const electronExport = (
       ? provenance.origins[0]
       : undefined);
   return origin !== undefined && ELECTRON_MODULE.test(origin.specifier)
-    ? origin.importedPath
+    ? electronExportPath(origin.importedPath)
     : null;
 };
 
