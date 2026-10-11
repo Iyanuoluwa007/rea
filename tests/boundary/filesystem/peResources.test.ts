@@ -6,17 +6,32 @@ import { peResourceFixture } from "../../../src/native/pe/PeResources.fixture.js
 import { createTestTempDirectory } from "../../fixtures/temporaryDirectory.js";
 
 describe("PE resource stable filesystem boundary", () => {
-  it("rejects symlinks, missing files and directories without inventing empty inventory", async () => {
+  it("rejects symlinks, missing files and directories as caller input without inventing empty inventory", async () => {
     const root = await createTestTempDirectory("rea-pe-resource-files-");
     const path = join(root, "image.exe");
     const alias = join(root, "alias.exe");
     await writeFile(path, peResourceFixture().bytes);
     await symlink(path, alias);
     const service = createPeResourcesService();
-    for (const candidate of [root, alias, join(root, "missing.exe")]) {
+    for (const [candidate, reason] of [
+      [root, "invalid_format"],
+      [alias, "invalid_format"],
+      [join(root, "missing.exe"), "invalid_value"],
+      [join(path, "child.exe"), "invalid_value"],
+    ] as const) {
       const result = await service.inspect({ path: candidate });
       if (result.ok) throw new Error("Expected file acquisition failure");
-      expect(result.error._tag).toBe("ArtifactOperationError");
+      expect(result.error).toMatchObject({
+        _tag: "AnalysisInputError",
+        operation: "inspect_pe_resources",
+        issues: [
+          {
+            path: ["path"],
+            reason,
+            message: expect.stringContaining(candidate),
+          },
+        ],
+      });
     }
   });
 

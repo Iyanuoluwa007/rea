@@ -5,7 +5,9 @@ import type { ExecutionOptions } from "../../application/AnalysisProvider.js";
 import { ArtifactOperationError } from "../../domain/artifactOperationError.js";
 import {
   AnalysisAccessDeniedError,
+  AnalysisArtifactChangedError,
   AnalysisCancelledError,
+  AnalysisInputError,
   AnalysisResourceConstraintError,
 } from "../../domain/analysisErrorCore.js";
 import type { InspectPeResourcesInput } from "../../domain/native/peResources.js";
@@ -37,47 +39,62 @@ export class PeResourcesProvider implements PeResourcesPort {
         ),
       );
     } catch (cause) {
-      if (options?.signal?.aborted)
-        return err(
-          new AnalysisCancelledError("inspect_pe_resources", { cause }),
-        );
-      if (cause instanceof ArtifactReaderFailure && cause.reason === "limit")
-        return err(
-          new AnalysisResourceConstraintError(
-            "inspect_pe_resources",
-            "memory",
-            cause.message,
-            {
-              max_file_bytes: input.max_file_bytes,
-              max_entries: input.max_entries,
-            },
-            { cause },
-          ),
-        );
-      if (
-        cause instanceof Error &&
-        "code" in cause &&
-        (cause.code === "EACCES" || cause.code === "EPERM")
-      )
-        return err(
-          new AnalysisAccessDeniedError(
-            "inspect_pe_resources",
-            input.path,
-            cause.code,
-            { cause },
-          ),
-        );
-      return err(
-        new ArtifactOperationError(
-          "inspect_pe_resources",
-          cause instanceof ArtifactReaderFailure ? cause.reason : "io",
-          undefined,
-          cause instanceof Error
-            ? cause.message
-            : "PE artifact inspection failed.",
-          { cause },
-        ),
-      );
+      return err(peResourcesFailure(cause, input, options?.signal));
     }
   }
 }
+
+const errorCode = (cause: unknown): unknown =>
+  cause instanceof Error && "code" in cause ? cause.code : undefined;
+
+// A missing or non-regular caller selection is an input error, as for the
+// EVM bytecode carrier read; only other I/O remains an artifact fault.
+const peResourcesFailure = (
+  cause: unknown,
+  input: InspectPeResourcesInput,
+  signal: AbortSignal | undefined,
+) => {
+  const operation = "inspect_pe_resources";
+  if (signal?.aborted) return new AnalysisCancelledError(operation, { cause });
+  const reason = cause instanceof ArtifactReaderFailure ? cause.reason : "io";
+  const message = cause instanceof Error ? cause.message : String(cause);
+  if (reason === "limit")
+    return new AnalysisResourceConstraintError(
+      operation,
+      "memory",
+      message,
+      {
+        max_file_bytes: input.max_file_bytes,
+        max_entries: input.max_entries,
+      },
+      { cause },
+    );
+  if (reason === "path")
+    return new AnalysisInputError(operation, { cause }, [
+      { path: ["path"], reason: "invalid_format", message },
+    ]);
+  if (reason === "integrity")
+    return new AnalysisArtifactChangedError(operation, input.path, message, {
+      cause,
+    });
+  const code = errorCode(cause);
+  if (code === "ENOENT" || code === "ENOTDIR")
+    return new AnalysisInputError(operation, { cause }, [
+      {
+        path: ["path"],
+        reason: "invalid_value",
+        message: `Selected PE image could not be read (${code}): ${input.path}.`,
+      },
+    ]);
+  if (code === "EACCES" || code === "EPERM")
+    return new AnalysisAccessDeniedError(operation, input.path, code, {
+      cause,
+    });
+  return new ArtifactOperationError(
+    operation,
+    reason,
+    undefined,
+    cause instanceof Error ? cause.message : "PE artifact inspection failed.",
+    { cause },
+  );
+};
