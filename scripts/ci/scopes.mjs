@@ -222,6 +222,7 @@ export const SCOPES = {
   website: [
     "website/**",
     "scripts/*website*.py",
+    "scripts/test-website-scripts.mjs",
     ".github/workflows/website-check.yml",
   ],
 };
