@@ -1,0 +1,854 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>安裝 REA 並設定你的 AI 代理</title>
+    <meta
+      name="description"
+      content="將 REA 連接到你的 AI 代理，或在終端機中檢查本機的 JavaScript 或 Electron 應用程式。包括設定步驟、第一個問題和原生分析提供者指南。"
+    />
+    <meta name="robots" content="noindex" />
+    <!-- website:translation source-sha256="a6c81c517ca7f105e4716ae30f82140a7f397f0195d11e9cc9cebbc35982b022" status="draft" -->
+    <!-- website:sharing:start -->
+    <!-- prettier-ignore -->
+    <link rel="canonical" href="https://rea.tools/zh-hant/get-started/" />
+    <!-- prettier-ignore -->
+    <meta property="og:type" content="website" />
+    <!-- prettier-ignore -->
+    <meta property="og:site_name" content="REA" />
+    <!-- prettier-ignore -->
+    <meta property="og:locale" content="zh_TW" />
+    <!-- prettier-ignore -->
+    <meta property="og:title" content="安裝 REA 並設定你的 AI 代理" />
+    <!-- prettier-ignore -->
+    <meta property="og:description" content="將 REA 連接到你的 AI 代理，或在終端機中檢查本機的 JavaScript 或 Electron 應用程式。包括設定步驟、第一個問題和原生分析提供者指南。" />
+    <!-- prettier-ignore -->
+    <meta property="og:url" content="https://rea.tools/zh-hant/get-started/" />
+    <!-- prettier-ignore -->
+    <meta property="og:image" content="https://rea.tools/assets/social-card.png" />
+    <!-- prettier-ignore -->
+    <meta property="og:image:type" content="image/png" />
+    <!-- prettier-ignore -->
+    <meta property="og:image:width" content="1200" />
+    <!-- prettier-ignore -->
+    <meta property="og:image:height" content="630" />
+    <!-- prettier-ignore -->
+    <meta
+      property="og:image:alt"
+      content="REA：了解軟體如何運作。與你的 AI 代理一起進行逆向工程。"
+    />
+    <!-- prettier-ignore -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <!-- prettier-ignore -->
+    <meta name="twitter:title" content="安裝 REA 並設定你的 AI 代理" />
+    <!-- prettier-ignore -->
+    <meta name="twitter:description" content="將 REA 連接到你的 AI 代理，或在終端機中檢查本機的 JavaScript 或 Electron 應用程式。包括設定步驟、第一個問題和原生分析提供者指南。" />
+    <!-- prettier-ignore -->
+    <meta name="twitter:image" content="https://rea.tools/assets/social-card.png" />
+    <!-- prettier-ignore -->
+    <meta
+      name="twitter:image:alt"
+      content="REA：了解軟體如何運作。與你的 AI 代理一起進行逆向工程。"
+    />
+    <!-- website:sharing:end -->
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="../../assets/styles.css" />
+    <script src="../../assets/main.js" defer></script>
+  </head>
+  <body id="top">
+    <!-- website:header:start -->
+    <!-- prettier-ignore -->
+    <a class="skip-link" href="#main">跳至主要內容</a>
+    <!-- prettier-ignore -->
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="../../" aria-label="REA 首頁"
+          ><span class="brand-name">REA</span
+          ><span class="brand-caption">Reverse Engineer Anything</span></a
+        >
+        <nav class="navigation" aria-label="主要導覽">
+          <a href="../../showcase/" hreflang="en">案例<span class="nav-badge" lang="en">EN</span></a>
+          <a href="../../blog/" hreflang="en">部落格<span class="nav-badge" lang="en">EN</span></a>
+          <a href="../../zh-hant/get-started/" class="nav-start" aria-current="page">快速開始</a>
+          <a href="../../guides/" hreflang="en">指南<span class="nav-badge" lang="en">EN</span></a>
+          <a href="../../faq/" hreflang="en">常見問題<span class="nav-badge" lang="en">EN</span></a>
+        </nav>
+        <div class="header-social">
+          <details class="language-menu">
+            <summary>
+              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path fill="none" stroke="currentColor" stroke-width="1.6" d="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18Z M3.6 9h16.8 M3.6 15h16.8 M12 3c2.4 2.5 3.6 5.5 3.6 9s-1.2 6.5-3.6 9c-2.4-2.5-3.6-5.5-3.6-9s1.2-6.5 3.6-9Z" />
+              </svg>
+              <span class="sr-only">語言: </span><span class="language-current">繁體中文</span>
+            </summary>
+            <ul class="language-list">
+              <li><a href="../../get-started/" hreflang="en" lang="en">English</a></li>
+              <li><a href="../../zh-hant/get-started/" hreflang="zh-Hant" lang="zh-Hant" aria-current="true">繁體中文</a></li>
+            </ul>
+          </details>
+          <a
+            class="nav-github"
+            href="https://github.com/morluto/rea"
+            aria-label="REA 的 GitHub"
+            title="REA 的 GitHub"
+            data-label-other="REA 的 GitHub（{count} 顆星）"
+          >
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 16 16"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                fill="currentColor"
+                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.65 7.65 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
+              />
+            </svg>
+            <span class="nav-github-count" hidden aria-hidden="true"></span>
+          </a>
+          <a
+            class="nav-discord"
+            href="https://discord.gg/GkcryMnJDM"
+            aria-label="加入 REA 的 Discord"
+            title="加入 REA 的 Discord"
+          >
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                fill="currentColor"
+                d="M20.317 4.3698a19.7913 19.7913 0 0 0-4.8851-1.5152.0741.0741 0 0 0-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 0 0-.0785-.037 19.7363 19.7363 0 0 0-4.8852 1.515.0699.0699 0 0 0-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 0 0 .0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 0 0 .0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 0 0-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 0 1-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 0 1 .0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 0 1 .0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 0 1-.0066.1276 12.2986 12.2986 0 0 1-1.873.8914.0766.0766 0 0 0-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 0 0 .0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 0 0 .0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 0 0-.0312-.0286ZM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189Zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"
+              />
+            </svg>
+          </a>
+          <a
+            class="nav-x"
+            href="https://x.com/reatools"
+            aria-label="在 X 上追蹤 REA"
+            title="在 X 上追蹤 REA"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                fill="currentColor"
+                d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"
+              />
+            </svg>
+          </a>
+        </div>
+      </div>
+    </header>
+    <!-- website:header:end -->
+    <main id="main" class="container">
+      <!-- website:translation-notice:start -->
+      <!-- website:translation-notice:end -->
+      <div class="page-heading">
+        <p class="breadcrumb"><a href="../../">首頁</a> / 快速開始</p>
+        <h1>設定 REA。</h1>
+        <p class="lede">
+          將 REA 連接到你的 AI 代理，或在終端機中檢查本機應用程式。
+        </p>
+        <p class="requirements">
+          你需要 Node.js 22（22.19 以上）、24（24.11 以上）或 26 以上版本。npm
+          會隨 Node.js 一起安裝。
+        </p>
+        <details class="evidence-details" id="install-node">
+          <summary>還沒有 Node.js，或不確定是否已安裝？</summary>
+          <p>開啟終端機並檢查：</p>
+          <div class="code-block">
+            <div class="code-header">
+              <span>終端機</span
+              ><button
+                class="copy-button"
+                type="button"
+                data-copy="node-check"
+                aria-label="複製 Node.js 版本檢查命令"
+              >
+                複製
+              </button>
+            </div>
+            <pre><code id="node-check">node -v
+npm -v</code></pre>
+          </div>
+          <p>
+            如果 <code>node -v</code> 顯示 v22.19+、v24.11+ 或
+            v26+，就可以開始了。如果顯示較舊的版本，或出現「<span
+              data-os-ui="windows"
+              >無法辨識</span
+            >」（英文系統：<span lang="en">not recognized</span>）或「<span
+              lang="en"
+              >command not found</span
+            >」，請安裝 Node.js 24 LTS：
+          </p>
+          <p><strong>Windows (PowerShell)</strong></p>
+          <div class="code-block">
+            <div class="code-header">
+              <span>Windows PowerShell</span
+              ><button
+                class="copy-button"
+                type="button"
+                data-copy="node-windows"
+                aria-label="複製 Windows 的 Node.js 安裝命令"
+              >
+                複製
+              </button>
+            </div>
+            <pre><code id="node-windows">winget install OpenJS.NodeJS.LTS</code></pre>
+          </div>
+          <p>
+            如果要求你接受條款，請輸入 Y。關閉 PowerShell 後重新開啟，再執行
+            <code>node -v</code>。
+          </p>
+          <p>
+            如果之後執行 <code>npx</code> 時，PowerShell 顯示<em
+              data-os-ui="windows"
+              >「因為這個系統上已停用指令碼執行」</em
+            >（英文系統：<em lang="en"
+              >"running scripts is disabled on this system"</em
+            >），請執行下列命令一次，然後再試：
+          </p>
+          <div class="code-block">
+            <div class="code-header">
+              <span>Windows PowerShell</span
+              ><button
+                class="copy-button"
+                type="button"
+                data-copy="node-windows-policy"
+                aria-label="複製 PowerShell 執行原則命令"
+              >
+                複製
+              </button>
+            </div>
+            <pre><code id="node-windows-policy">Set-ExecutionPolicy -Scope CurrentUser RemoteSigned</code></pre>
+          </div>
+          <p><strong>macOS</strong></p>
+          <p>如果你使用 Homebrew：</p>
+          <div class="code-block">
+            <div class="code-header">
+              <span>macOS · Homebrew</span
+              ><button
+                class="copy-button"
+                type="button"
+                data-copy="node-macos-brew"
+                aria-label="複製以 Homebrew 安裝 Node.js 的命令"
+              >
+                複製
+              </button>
+            </div>
+            <pre><code id="node-macos-brew">brew install node</code></pre>
+          </div>
+          <p>否則：</p>
+          <div class="code-block">
+            <div class="code-header">
+              <span>macOS</span
+              ><button
+                class="copy-button"
+                type="button"
+                data-copy="node-macos-fnm"
+                aria-label="複製 macOS 的 fnm 安裝命令"
+              >
+                複製
+              </button>
+            </div>
+            <pre><code id="node-macos-fnm">curl -fsSL https://fnm.vercel.app/install | bash</code></pre>
+          </div>
+          <p>
+            關閉<span data-os-ui="macos">終端機</span>後重新開啟，然後執行：
+          </p>
+          <div class="code-block">
+            <div class="code-header">
+              <span>macOS</span
+              ><button
+                class="copy-button"
+                type="button"
+                data-copy="node-macos-install"
+                aria-label="複製 macOS 的 Node.js 24 命令"
+              >
+                複製
+              </button>
+            </div>
+            <pre><code id="node-macos-install">fnm install 24
+fnm default 24</code></pre>
+          </div>
+          <p><strong>Linux</strong></p>
+          <div class="code-block">
+            <div class="code-header">
+              <span>Linux</span
+              ><button
+                class="copy-button"
+                type="button"
+                data-copy="node-linux-fnm"
+                aria-label="複製 Linux 的 fnm 安裝命令"
+              >
+                複製
+              </button>
+            </div>
+            <pre><code id="node-linux-fnm">curl -fsSL https://fnm.vercel.app/install | bash</code></pre>
+          </div>
+          <p>
+            安裝程式需要 <code>curl</code> 和 <code>unzip</code>（Debian/Ubuntu
+            上可執行
+            <code>sudo apt install curl unzip</code
+            >）。關閉終端機後重新開啟，然後執行：
+          </p>
+          <div class="code-block">
+            <div class="code-header">
+              <span>Linux</span
+              ><button
+                class="copy-button"
+                type="button"
+                data-copy="node-linux-install"
+                aria-label="複製 Linux 的 Node.js 24 命令"
+              >
+                複製
+              </button>
+            </div>
+            <pre><code id="node-linux-install">fnm install 24
+fnm default 24</code></pre>
+          </div>
+          <p>
+            Linux 發行版本身的 <code>nodejs</code> 套件通常比 22.19
+            舊；如果改用它，請先用 <code>node -v</code> 檢查版本。
+          </p>
+          <p>
+            想用一般的安裝程式？請從
+            <a href="https://nodejs.org/en/download">nodejs.org</a> 下載 LTS
+            版本。
+          </p>
+        </details>
+      </div>
+      <div class="article-layout">
+        <nav class="contents" aria-label="本頁內容">
+          <p>設定選項</p>
+          <ul>
+            <li><a href="#agent">連接你的 AI 代理</a></li>
+            <li><a href="#terminal">使用 CLI</a></li>
+            <li><a href="#native">設定原生分析</a></li>
+            <li><a href="#help">取得協助</a></li>
+          </ul>
+        </nav>
+        <article class="article" aria-label="REA 快速開始指南">
+          <section class="article-section" id="agent">
+            <h2>連接你的 AI 代理</h2>
+            <p>
+              執行設定流程，將 REA 連接到你的 AI 代理。可選擇的用戶端包括 Claude
+              Code、Codex、Cursor、Gemini CLI、Windsurf、Grok Build 和其他支援的
+              MCP 用戶端。Grok Bot 的連接器要從它的聊天介面新增。
+            </p>
+            <details class="evidence-details">
+              <summary>第一次使用 AI 代理？</summary>
+              <p>
+                AI 代理是在你的電腦上運作的 AI
+                助理，而不是在瀏覽器分頁中。它可以讀取檔案、執行命令，並在做出變更前先詢問你。REA
+                為它提供逆向工程工具。
+              </p>
+              <p>
+                如果你還沒有 AI 代理，請挑選一個，依照它的安裝頁面安裝並登入：
+              </p>
+              <ul>
+                <li>
+                  <strong
+                    ><a href="https://code.claude.com/docs/en/setup"
+                      >Claude Code</a
+                    ></strong
+                  >，由 Anthropic 開發。需要付費的 Claude 方案。
+                </li>
+                <li>
+                  <strong
+                    ><a href="https://github.com/openai/codex">Codex</a></strong
+                  >，由 OpenAI 開發。使用你的 ChatGPT 帳號登入。
+                </li>
+                <li>
+                  <strong
+                    ><a href="https://opencode.ai/docs">OpenCode</a></strong
+                  >，開放原始碼。可連接你選擇的模型供應商。
+                </li>
+              </ul>
+              <p>
+                接著開啟它，把下面的提示詞複製進去。AI 代理會執行 REA
+                的設定流程，並在做任何變更前先讓你看設定計畫。
+              </p>
+            </details>
+            <div class="agent-terminal">
+              <div class="terminal-header">
+                <span class="terminal-title"
+                  ><span class="terminal-dots" aria-hidden="true"
+                    ><i></i><i></i><i></i></span
+                  >你的 AI 代理</span
+                >
+                <button
+                  class="copy-button"
+                  type="button"
+                  data-copy="agent-install-prompt"
+                  aria-label="複製 REA 安裝提示詞"
+                >
+                  複製
+                </button>
+              </div>
+              <p class="terminal-prompt">
+                <span class="prompt-symbol" aria-hidden="true">›</span
+                ><span id="agent-install-prompt"
+                  >使用 npx rea-agents@latest setup 安裝 REA，並將它連接到這個
+                  AI 代理。先讓我核准設定計畫，然後驗證安裝結果。</span
+                ><span class="terminal-cursor" aria-hidden="true"></span>
+              </p>
+            </div>
+            <details class="evidence-details">
+              <summary>或自行執行設定</summary>
+              <details class="evidence-details">
+                <summary>如何開啟終端機？</summary>
+                <ul>
+                  <li>
+                    <strong>Windows：</strong>開啟<span data-os-ui="windows"
+                      >「開始」功能表</span
+                    >，輸入 <em>PowerShell</em> 後按 Enter。
+                  </li>
+                  <li>
+                    <strong>macOS：</strong>按 <kbd>⌘</kbd>
+                    <kbd>Space</kbd>，輸入<em data-os-ui="macos">終端機</em>或
+                    <em>Terminal</em> 後按 Enter。
+                  </li>
+                  <li>
+                    <strong>Linux：</strong>在大多數桌面環境中，按
+                    <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>T</kbd>。
+                  </li>
+                </ul>
+                <p>
+                  用 <kbd>Ctrl</kbd> <kbd>V</kbd> 貼上命令（macOS：<kbd>⌘</kbd>
+                  <kbd>V</kbd>；Linux 終端機：<kbd>Ctrl</kbd> <kbd>Shift</kbd>
+                  <kbd>V</kbd>），然後按 Enter。
+                </p>
+              </details>
+              <div class="code-block">
+                <div class="code-header">
+                  <span>終端機</span
+                  ><button
+                    class="copy-button"
+                    type="button"
+                    data-copy="agent-setup"
+                    aria-label="複製 AI 代理設定命令"
+                  >
+                    複製
+                  </button>
+                </div>
+                <pre><code id="agent-setup">npx rea-agents@latest setup</code></pre>
+              </div>
+            </details>
+            <p>
+              選擇你的用戶端並檢查設定計畫。REA 會加入它的 MCP 連線和對應的調查
+              skill，並備份現有的設定。套用變更前，它會先詢問你。
+            </p>
+            <p>設定完成後，請重新啟動你的用戶端。</p>
+            <details class="evidence-details">
+              <summary>如何重新啟動用戶端？</summary>
+              <p>
+                <strong>桌面應用程式</strong>（Claude
+                Desktop、Cursor、Windsurf、VS
+                Code）：完全結束應用程式，再重新開啟。只關閉視窗是不夠的。在
+                macOS 上按 <kbd>⌘</kbd> <kbd>Q</kbd>；在 Windows
+                上，如果有系統匣圖示，也要從那裡結束。
+              </p>
+              <p>
+                <strong>終端機 AI 代理</strong>（Claude Code、Codex、Gemini
+                CLI）：結束工作階段後重新啟動。
+              </p>
+            </details>
+            <p>
+              給你的 AI 代理一個目標路徑和一個具體的問題。如果是 JavaScript 或
+              Electron 應用程式，可以這樣開始：
+            </p>
+            <blockquote class="prompt">
+              <p>
+                請查看
+                <code>/absolute/path/to/app</code
+                >，找出它如何匯出資料。列出相關的進入點、呼叫和相依性，並附上每項發現的原始碼位置。
+              </p>
+            </blockquote>
+            <p>把路徑換成你本機的目標。</p>
+            <details class="evidence-details">
+              <summary>如何取得資料夾的完整路徑？</summary>
+              <ul>
+                <li>
+                  <strong>Windows：</strong>在<span data-os-ui="windows"
+                    >檔案總管</span
+                  >中，以滑鼠右鍵按一下資料夾，然後選擇<em data-os-ui="windows"
+                    >複製路徑</em
+                  >。在 Windows 10 上，請按住 Shift 再按右鍵，然後選擇<em
+                    data-os-ui="windows"
+                    >複製為路徑</em
+                  >。
+                </li>
+                <li>
+                  <strong>macOS：</strong>在 Finder 中，以右鍵按一下資料夾，按住
+                  Option 鍵，然後選擇<em data-os-ui="macos"
+                    >將「…」拷貝為路徑名稱</em
+                  >。
+                </li>
+                <li>
+                  <strong>任何系統：</strong
+                  >把資料夾拖進終端機視窗，就會出現它的路徑。
+                </li>
+              </ul>
+              <p>在終端機中，如果路徑含有空格，請用引號括起來。</p>
+            </details>
+          </section>
+
+          <section class="article-section" id="terminal">
+            <h2>使用 CLI</h2>
+            <p>
+              不執行應用程式，直接分析 JavaScript 或 Electron 應用程式的資料夾或
+              ASAR 封存檔：
+            </p>
+            <div class="code-block">
+              <div class="code-header">
+                <span>靜態應用程式分析</span
+                ><button
+                  class="copy-button"
+                  type="button"
+                  data-copy="terminal-analysis"
+                  aria-label="複製 JavaScript 分析命令"
+                >
+                  複製
+                </button>
+              </div>
+              <pre><code id="terminal-analysis">npx -y rea-agents@latest analyze-javascript-application \
+  /absolute/path/to/app --json</code></pre>
+            </div>
+            <p>
+              把路徑換成你解開後的應用程式目錄或 <code>.asar</code> 檔案。在
+              Windows 上，可以使用 <code>"D:/apps/example"</code> 這類路徑。
+            </p>
+            <details class="evidence-details">
+              <summary>應用程式的 .asar 檔案在哪裡？</summary>
+              <p>
+                Electron 應用程式通常把它放在 <code>resources</code> 資料夾中：
+              </p>
+              <ul>
+                <li>
+                  <strong>Windows：</strong>
+
+                  <code
+                    >C:\Users\&lt;you&gt;\AppData\Local\Programs\&lt;App&gt;\resources\app.asar</code
+                  >
+                </li>
+                <li>
+                  <strong>macOS：</strong>
+
+                  <code
+                    >/Applications/&lt;App&gt;.app/Contents/Resources/app.asar</code
+                  >
+                  （以右鍵按一下應用程式，然後選擇<em data-os-ui="macos"
+                    >顯示套件內容</em
+                  >）
+                </li>
+                <li>
+                  <strong>Linux：</strong>通常在
+                  <code>/opt/&lt;App&gt;/resources/app.asar</code>
+                </li>
+              </ul>
+              <p>
+                有些應用程式會安裝在其他位置。請在應用程式的資料夾中搜尋
+                <code>app.asar</code>。
+              </p>
+            </details>
+            <p>
+              結果會識別應用程式、顯示模組之間的連結，並提供它們的原始碼位置。REA
+              無法解析的連結會在結果中標示出來。
+            </p>
+            <p>如果想在 shell 中使用固定的 <code>rea</code> 命令：</p>
+            <div class="code-block">
+              <div class="code-header">
+                <span>安裝 CLI</span
+                ><button
+                  class="copy-button"
+                  type="button"
+                  data-copy="install-cli"
+                  aria-label="複製 CLI 安裝命令"
+                >
+                  複製
+                </button>
+              </div>
+              <pre><code id="install-cli">npm install --global rea-agents</code></pre>
+            </div>
+            <p>
+              <a href="../../guides/javascript/"
+                >繼續閱讀 JavaScript 應用程式指南</a
+              >
+            </p>
+          </section>
+
+          <section class="article-section" id="native">
+            <h2>設定原生分析</h2>
+            <p>
+              原生二進位檔案需要本機的分析工具。請在下方選擇並設定一個工具，然後把你的執行檔或函式庫交給
+              REA。
+            </p>
+            <details class="evidence-details">
+              <summary>選擇工具：Ghidra、Hopper 或 IDA</summary>
+              <div class="provider-list">
+                <div class="provider">
+                  <h3>Ghidra</h3>
+                  <div>
+                    <p>
+                      在 x64 或 arm64 的 Linux 或 macOS 上，使用現有的 Ghidra
+                      12.1.x 安裝和 64 位元 JDK 21 或更新版本。你的 Ghidra
+                      安裝需要適用於主機架構的原生反編譯器。執行設定前，請先設定路徑：
+                    </p>
+                    <details class="evidence-details">
+                      <summary>連接你的 Ghidra 安裝</summary>
+                      <div class="code-block">
+                        <div class="code-header">
+                          <span>Ghidra 連線 · macOS / Linux</span
+                          ><button
+                            class="copy-button"
+                            type="button"
+                            data-copy="ghidra-connect"
+                            aria-label="複製 macOS 和 Linux 的 Ghidra 連線命令"
+                          >
+                            複製
+                          </button>
+                        </div>
+                        <pre><code id="ghidra-connect">export GHIDRA_INSTALL_DIR=/absolute/path/to/ghidra_12.1.4_PUBLIC
+export JAVA_HOME=/absolute/path/to/jdk-21
+npx -y rea-agents@latest doctor --provider ghidra --json
+npx rea-agents@latest setup</code></pre>
+                      </div>
+                      <p>
+                        把兩個路徑換成你現有的安裝位置。設定流程會檢查它們，並為你選擇的用戶端記錄有效的設定。在
+                        Linux arm64 上，你可能需要另外建置 Ghidra
+                        的原生反編譯器。
+                      </p>
+                    </details>
+                    <details class="evidence-details">
+                      <summary>在 Windows 上連接 Ghidra</summary>
+                      <p>
+                        Windows x64 提供實驗性的唯讀支援，可分析本機固定 NTFS
+                        磁碟上的原生 x86 和 x64 PE 應用程式及 DLL。請使用現有的
+                        Ghidra 12.1.x 安裝和 64 位元 JDK 21 或更新版本：
+                      </p>
+                      <div class="code-block">
+                        <div class="code-header">
+                          <span>Ghidra 連線 · Windows PowerShell</span>
+                          <button
+                            class="copy-button"
+                            type="button"
+                            data-copy="ghidra-windows-connect"
+                            aria-label="複製 Windows PowerShell 的 Ghidra 連線命令"
+                          >
+                            複製
+                          </button>
+                        </div>
+                        <pre><code id="ghidra-windows-connect">$env:GHIDRA_INSTALL_DIR = "C:/tools/ghidra_12.1.4_PUBLIC"
+$env:JAVA_HOME = "C:/tools/jdk-21"
+npx -y rea-agents@latest doctor --provider ghidra --json
+npx rea-agents@latest setup</code></pre>
+                      </div>
+                      <p>
+                        把兩個路徑換成你的安裝位置，然後檢查設定流程的計畫。
+                      </p>
+                    </details>
+                  </div>
+                </div>
+                <div class="provider">
+                  <h3>Hopper</h3>
+                  <div>
+                    <p>
+                      在 macOS 或 Linux 上連接
+                      Hopper。執行上面的設定命令；它會偵測現有的安裝，或提出安裝計畫讓你核准。
+                    </p>
+                    <p>
+                      在 macOS 上進行無人看管的分析前，請先完成 Hopper
+                      首次啟動時的選擇：使用示範模式，或啟用授權。
+                    </p>
+                  </div>
+                </div>
+                <div class="provider">
+                  <h3>IDA</h3>
+                  <div>
+                    <p>
+                      已驗證的 IDA 設定使用 Windows，搭配現有的 MCP
+                      註冊，連接已開啟的 GUI 或無介面資料庫。Linux 和 macOS
+                      上的無介面分析尚未驗證。
+                    </p>
+                    <details class="evidence-details">
+                      <summary>連接現有的 IDA MCP 註冊</summary>
+                      <p>
+                        把上游伺服器可正常運作的 <code>command</code>、<code
+                          >args</code
+                        >
+                        和選用的 <code>env</code> 保存在 JSON 檔案中。也接受含有
+                        <code>ida-pro-mcp</code> 項目的現有
+                        <code>mcpServers</code> 物件。執行設定前，請讓 REA
+                        指向該檔案：
+                      </p>
+                      <div class="code-block">
+                        <div class="code-header">
+                          <span>IDA 連線 · Windows PowerShell</span
+                          ><button
+                            class="copy-button"
+                            type="button"
+                            data-copy="ida-connect"
+                            aria-label="複製 Windows PowerShell 的 IDA 連線命令"
+                          >
+                            複製
+                          </button>
+                        </div>
+                        <pre><code id="ida-connect">$env:REA_IDA_MCP_CONFIG = "C:/analysis/ida-mcp.json"
+$env:REA_ANALYSIS_PROVIDER = "ida"
+npx -y rea-agents@latest doctor --provider ida --json
+npx rea-agents@latest setup</code></pre>
+                      </div>
+                      <p>
+                        附加模式使用上游的舊版 1.4.0
+                        工具，且原始二進位檔案須已在 IDA
+                        中開啟。無介面模式使用上游的資料庫監管 API，以及含有
+                        <code>"mode": "headless"</code> 的註冊；實際驗證涵蓋 IDA
+                        9.3 Windows x64 監管程式。Doctor 會檢查註冊，但不會啟動
+                        IDA。
+                      </p>
+                      <p>
+                        請把原始執行檔的路徑交給 REA，並在 CLI 查詢中加上
+                        <code>--provider ida</code>。若透過 AI 代理使用，請在
+                        REA 註冊的環境變數中加入
+                        <code>REA_IDA_MCP_CONFIG</code
+                        >，並在開啟二進位檔案時選擇 IDA。
+                      </p>
+                    </details>
+                  </div>
+                </div>
+              </div>
+            </details>
+            <p class="small-heading">
+              若已設定好 Ghidra，可用下列命令檢查函式：
+            </p>
+            <div class="code-block">
+              <div class="code-header">
+                <span>函式分析</span
+                ><button
+                  class="copy-button"
+                  type="button"
+                  data-copy="native-function"
+                  aria-label="複製原生函式分析命令"
+                >
+                  複製
+                </button>
+              </div>
+              <pre><code id="native-function">npx -y rea-agents@latest function /absolute/path/to/program main \
+  --provider ghidra --json</code></pre>
+            </div>
+            <p>把 <code>main</code> 換成你要檢查的函式名稱或位址。</p>
+            <details class="evidence-details">
+              <summary>原生分析工作階段如何運作</summary>
+              <p>
+                每個 CLI
+                命令都會匯入並分析二進位檔案，然後關閉它的工作階段。在工作階段開啟期間，你的
+                AI 代理透過 MCP 發出的查詢會重複使用已匯入的二進位檔案。
+              </p>
+            </details>
+            <p>
+              <a href="../../guides/native/">跟著原生分析範例操作</a
+              >，看看函式結果如何引導出還原的計算。
+            </p>
+          </section>
+
+          <section class="article-section" id="help">
+            <h2>取得協助</h2>
+            <h3>如果你的 AI 代理看不到 REA</h3>
+            <p>
+              設定完成後，請重新啟動或重新連接用戶端。用
+              <code>doctor</code> 檢查它與 REA 的連線；以 Codex 為例：
+            </p>
+            <div class="code-block">
+              <div class="code-header">
+                <span>檢查單一用戶端</span
+                ><button
+                  class="copy-button"
+                  type="button"
+                  data-copy="client-doctor"
+                  aria-label="複製用戶端診斷命令"
+                >
+                  複製
+                </button>
+              </div>
+              <pre><code id="client-doctor">npx -y rea-agents@latest doctor --client codex --json</code></pre>
+            </div>
+            <h3 class="small-heading">如果提供者出現問題</h3>
+            <p>檢查你正在使用的提供者。以 Ghidra 為例：</p>
+            <div class="code-block">
+              <div class="code-header">
+                <span>檢查單一提供者</span
+                ><button
+                  class="copy-button"
+                  type="button"
+                  data-copy="provider-doctor"
+                  aria-label="複製提供者診斷命令"
+                >
+                  複製
+                </button>
+              </div>
+              <pre><code id="provider-doctor">npx -y rea-agents@latest doctor --provider ghidra --json</code></pre>
+            </div>
+            <p>報告會列出失敗的檢查項目和建議的下一步。</p>
+            <ul class="reading-list">
+              <li>
+                <a href="../../faq/">REA 常見問題</a
+                ><span>關於更新、AI 代理和分析的簡短解答。</span>
+              </li>
+              <li>
+                <a href="../../guides/">選擇調查指南</a
+                ><span>二進位檔案、Electron 應用程式和瀏覽器的實作範例。</span>
+              </li>
+              <li>
+                <a href="https://github.com/morluto/rea/issues">GitHub issues</a
+                ><span>回報問題時，請附上命令和診斷結果。</span>
+              </li>
+              <li>
+                <a href="https://discord.gg/GkcryMnJDM">REA 社群</a
+                ><span>問題、調查和進行中的工作。</span>
+              </li>
+            </ul>
+          </section>
+        </article>
+      </div>
+    </main>
+    <!-- website:footer:start -->
+    <!-- prettier-ignore -->
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <p>REA · Reverse Engineer Anything</p>
+        <div class="footer-links">
+          <a href="https://github.com/morluto/rea">原始碼</a
+          ><a href="https://github.com/morluto/rea/blob/main/LICENSE">MIT 授權</a
+          ><a href="https://discord.gg/GkcryMnJDM">加入社群</a
+          ><a href="https://x.com/reatools">在 X 上追蹤我們</a>
+        </div>
+      </div>
+    </footer>
+    <p
+      class="sr-only"
+      id="copy-status"
+      role="status"
+      aria-live="polite"
+      data-copied="已複製"
+      data-selected="已選取"
+      data-status-copied="程式碼已複製到剪貼簿。"
+      data-status-selected="已選取程式碼，請用鍵盤複製。"
+    ></p>
+    <a class="back-to-top" href="#top" aria-label="回到頂端">
+      <span aria-hidden="true">↑</span> 頂端
+    </a>
+    <!-- website:footer:end -->
+  </body>
+</html>
