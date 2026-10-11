@@ -366,6 +366,13 @@ const parsedSummary = (
   readTypeDetail: () => undefined,
 });
 
+// The image loader maps VirtualSize bytes, using SizeOfRawData only when
+// VirtualSize is zero. Raw bytes past that extent are file-alignment padding.
+const virtualExtent = (section: Section): number =>
+  section.virtualSize === 0 ? section.rawSize : section.virtualSize;
+const fileBackedExtent = (section: Section): number =>
+  Math.min(section.rawSize, virtualExtent(section));
+
 class PeImage {
   readonly imageBase: bigint;
   readonly sizeOfImage: number;
@@ -417,10 +424,7 @@ class PeImage {
     });
     for (const section of this.sections) {
       this.#range(section.rawOffset, section.rawSize);
-      if (
-        section.rva + Math.max(section.virtualSize, section.rawSize) >
-        this.sizeOfImage
-      )
+      if (section.rva + virtualExtent(section) > this.sizeOfImage)
         throw new Error("PE section exceeds the declared image extent");
     }
   }
@@ -456,11 +460,11 @@ class PeImage {
     for (const section of this.sections) {
       if (this.#budget !== undefined && !this.#budget.consumeWork(1))
         return null;
-      const extent = Math.max(section.virtualSize, section.rawSize);
+      const extent = virtualExtent(section);
       if (relative < section.rva || relative - section.rva > extent - size)
         continue;
       const delta = relative - section.rva;
-      if (delta > section.rawSize - size) return null;
+      if (delta > fileBackedExtent(section) - size) return null;
       const offset = section.rawOffset + delta;
       return this.#bytes.subarray(offset, offset + size);
     }
@@ -475,7 +479,7 @@ class PeImage {
       if (
         (section.characteristics & 0x20000000) !== 0 &&
         rva >= BigInt(section.rva) &&
-        rva < BigInt(section.rva + section.rawSize)
+        rva < BigInt(section.rva + virtualExtent(section))
       )
         return true;
     }
@@ -492,10 +496,7 @@ class PeImage {
       if (this.#budget !== undefined && !this.#budget.consumeWork(1)) return 0;
       if (
         rva >= BigInt(candidate.rva) &&
-        rva <
-          BigInt(
-            candidate.rva + Math.max(candidate.virtualSize, candidate.rawSize),
-          )
+        rva < BigInt(candidate.rva + virtualExtent(candidate))
       ) {
         section = candidate;
         break;
@@ -503,9 +504,7 @@ class PeImage {
     }
     return section === undefined
       ? 0
-      : section.rva +
-          Math.max(section.virtualSize, section.rawSize) -
-          Number(rva);
+      : section.rva + virtualExtent(section) - Number(rva);
   }
   #range(offset: number, size: number): void {
     if (
@@ -602,7 +601,7 @@ const findDirectory = (
     )
       continue;
     const begin = section.rawOffset;
-    const end = begin + section.rawSize;
+    const end = begin + fileBackedExtent(section);
     const first = (begin + 7) & ~7;
     const candidateBytes =
       first <= end - 16 ? (Math.floor((end - 16 - first) / 8) + 1) * 8 : 0;
@@ -970,10 +969,10 @@ const discoverTables = (
       (section.characteristics & 0x20000000) !== 0
     )
       continue;
-    if (section.rawSize > 0) {
+    if (fileBackedExtent(section) > 0) {
       ranges.push({
         start: image.addressForRva(section.rva),
-        end: image.addressForRva(section.rva + section.rawSize),
+        end: image.addressForRva(section.rva + fileBackedExtent(section)),
       });
     }
   }
@@ -984,9 +983,7 @@ const discoverTables = (
         (candidate.characteristics & 0x20000000) === 0 &&
         hydrated.base >= image.addressForRva(candidate.rva) &&
         hydrated.base + BigInt(hydrated.sizeBytes) <=
-          image.addressForRva(
-            candidate.rva + Math.max(candidate.virtualSize, candidate.rawSize),
-          ),
+          image.addressForRva(candidate.rva + virtualExtent(candidate)),
     );
     if (section !== undefined)
       ranges.push({
@@ -1592,11 +1589,9 @@ export const parseNativeAotPe = (
           ? "raw-image-pointer-scan"
           : "raw-image-and-rehydrated-pointer-scan",
     },
-    diagnostics: [
-      ...(hydrationError === null
+    diagnostics: (hydrationError === null
         ? []
         : [`Read-only hydration stopped: ${hydrationError}`]),
-    ],
     limitations: reportLimitations,
   };
   if (Buffer.byteLength(JSON.stringify(summary)) > maximumSummaryBytes)

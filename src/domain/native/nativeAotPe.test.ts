@@ -103,3 +103,39 @@ describe("read-only NativeAOT PE parser", () => {
     });
   });
 });
+
+describe("NativeAOT PE section virtual extent", () => {
+  const TEXT_VIRTUAL_SIZE = 0x188 + 8;
+  const RDATA_VIRTUAL_SIZE = 0x188 + 40 + 8;
+  const parseWithVirtualSize = (at: number, virtualSize: number) => {
+    const bytes = nativeAotPeFixture();
+    bytes.writeUInt32LE(virtualSize, at);
+    return parseNativeAotPe(
+      bytes,
+      nativeAotPeDigest(bytes),
+      SUMMARY_BUDGET,
+      "0x140000000",
+    ).summary;
+  };
+
+  it("does not treat raw padding past VirtualSize as executable code", () => {
+    // The 0x2280 MethodTable's only slot targets 0x1040, past .text's 0x40 bytes.
+    expect(parseWithVirtualSize(TEXT_VIRTUAL_SIZE, 0x40)).toMatchObject({
+      method_tables: 2,
+    });
+  });
+
+  it("does not read a frozen string from raw padding past VirtualSize", () => {
+    expect(parseWithVirtualSize(RDATA_VIRTUAL_SIZE, 0x300)).toMatchObject({
+      status: "partial",
+      frozen_strings: [],
+    });
+  });
+
+  it("maps raw bytes when VirtualSize is zero, as the image loader does", () => {
+    expect(parseWithVirtualSize(TEXT_VIRTUAL_SIZE, 0)).toMatchObject({
+      status: "complete",
+      method_tables: 3,
+    });
+  });
+});
