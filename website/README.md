@@ -123,7 +123,7 @@ describe its recorded investigation; update them only when repeating that work.
 - `public/showcase/ctf/index.html`: DownUnderCTF's masked-squares flag checker, extracted equations and real process captures.
 - `public/get-started/index.html`: agent setup, first CLI result and provider guides.
 - `public/faq/index.html`: concise answers about setup, updates, analysis and troubleshooting.
-- `public/guides/`: a guide hub and native, JavaScript/Electron and browser examples.
+- `public/guides/`: a guide hub, a step-by-step setup with recorded setup screens for first-time users, and native, JavaScript/Electron and browser examples.
 - `public/examples/`: downloadable Electron source and an interactive Notes browser app.
 - `public/assets/`: shared styles, interactions, favicon and explanatory figures.
 

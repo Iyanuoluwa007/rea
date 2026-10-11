@@ -1,0 +1,779 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Set Up REA Step by Step — REA</title>
+    <meta
+      name="description"
+      content="Set up REA with pictures, starting from a web-browser AI chat: install an AI app and Node.js, run one command and ask your first question."
+    />
+    <!-- website:sharing:start -->
+    <!-- prettier-ignore -->
+    <link rel="canonical" href="https://rea.tools/guides/setup/" />
+    <!-- prettier-ignore -->
+    <meta property="og:type" content="website" />
+    <!-- prettier-ignore -->
+    <meta property="og:site_name" content="REA" />
+    <!-- prettier-ignore -->
+    <meta property="og:title" content="Set Up REA Step by Step — REA" />
+    <!-- prettier-ignore -->
+    <meta property="og:description" content="Set up REA with pictures, starting from a web-browser AI chat: install an AI app and Node.js, run one command and ask your first question." />
+    <!-- prettier-ignore -->
+    <meta property="og:url" content="https://rea.tools/guides/setup/" />
+    <!-- prettier-ignore -->
+    <meta property="og:image" content="https://rea.tools/assets/social-card.png" />
+    <!-- prettier-ignore -->
+    <meta property="og:image:type" content="image/png" />
+    <!-- prettier-ignore -->
+    <meta property="og:image:width" content="1200" />
+    <!-- prettier-ignore -->
+    <meta property="og:image:height" content="630" />
+    <!-- prettier-ignore -->
+    <meta
+      property="og:image:alt"
+      content="REA — Find out how software works. Reverse engineering with your coding agent."
+    />
+    <!-- prettier-ignore -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <!-- prettier-ignore -->
+    <meta name="twitter:title" content="Set Up REA Step by Step — REA" />
+    <!-- prettier-ignore -->
+    <meta name="twitter:description" content="Set up REA with pictures, starting from a web-browser AI chat: install an AI app and Node.js, run one command and ask your first question." />
+    <!-- prettier-ignore -->
+    <meta name="twitter:image" content="https://rea.tools/assets/social-card.png" />
+    <!-- prettier-ignore -->
+    <meta
+      name="twitter:image:alt"
+      content="REA — Find out how software works. Reverse engineering with your coding agent."
+    />
+    <!-- website:sharing:end -->
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="../../assets/styles.css" />
+    <script src="../../assets/main.js" defer></script>
+  </head>
+  <body id="top">
+    <a class="skip-link" href="#main">Skip to content</a>
+    <!-- website:header:start -->
+    <!-- prettier-ignore -->
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="../../" aria-label="REA home"
+          ><span class="brand-name">REA</span
+          ><span class="brand-caption">Reverse Engineer Anything</span></a
+        >
+        <nav class="navigation" aria-label="Main navigation">
+          <a href="../../showcase/">Showcases</a>
+          <a href="../../blog/">Blog</a>
+          <a href="../../get-started/" class="nav-start">Get started</a>
+          <a href="../../guides/" aria-current="page">Guides</a>
+          <a href="../../faq/">FAQ</a>
+        </nav>
+        <div class="header-social">
+          <a
+            class="nav-github"
+            href="https://github.com/morluto/rea"
+            aria-label="REA on GitHub"
+            title="REA on GitHub"
+          >
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 16 16"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                fill="currentColor"
+                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.65 7.65 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
+              />
+            </svg>
+            <span class="nav-github-count" hidden aria-hidden="true"></span>
+          </a>
+          <a
+            class="nav-discord"
+            href="https://discord.gg/GkcryMnJDM"
+            aria-label="Join REA on Discord"
+            title="Join REA on Discord"
+          >
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                fill="currentColor"
+                d="M20.317 4.3698a19.7913 19.7913 0 0 0-4.8851-1.5152.0741.0741 0 0 0-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 0 0-.0785-.037 19.7363 19.7363 0 0 0-4.8852 1.515.0699.0699 0 0 0-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 0 0 .0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 0 0 .0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 0 0-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 0 1-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 0 1 .0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 0 1 .0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 0 1-.0066.1276 12.2986 12.2986 0 0 1-1.873.8914.0766.0766 0 0 0-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 0 0 .0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 0 0 .0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 0 0-.0312-.0286ZM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189Zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"
+              />
+            </svg>
+          </a>
+          <a
+            class="nav-x"
+            href="https://x.com/reatools"
+            aria-label="Follow REA on X"
+            title="Follow REA on X"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                fill="currentColor"
+                d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"
+              />
+            </svg>
+          </a>
+        </div>
+      </div>
+    </header>
+    <!-- website:header:end -->
+    <main id="main" class="container">
+      <div class="page-heading">
+        <p class="breadcrumb">
+          <a href="../../">Home</a> / <a href="../">Guides</a> / Setup, step by
+          step
+        </p>
+        <h1>Set up REA,<br />one step at a time.</h1>
+        <p class="lede">
+          Only used AI in a web browser? Start here. Each step says what to
+          click, what to type and what you should see.
+        </p>
+        <p class="page-meta">
+          About 15 minutes · Mac, Windows or Linux · No coding needed
+        </p>
+      </div>
+      <div class="article-layout">
+        <nav class="contents" aria-label="On this page">
+          <p>Steps</p>
+          <ul>
+            <li><a href="#pieces">How the pieces fit</a></li>
+            <li><a href="#app">1. Get an AI app</a></li>
+            <li><a href="#node">2. Install Node.js</a></li>
+            <li><a href="#terminal">3. Open the terminal</a></li>
+            <li><a href="#run">4. Run REA setup</a></li>
+            <li><a href="#choose">5. Choose your AI app</a></li>
+            <li><a href="#approve">6. Approve the changes</a></li>
+            <li><a href="#restart">7. Restart your AI app</a></li>
+            <li><a href="#ask">8. Ask your first question</a></li>
+            <li><a href="#trouble">If something goes wrong</a></li>
+          </ul>
+        </nav>
+        <article class="article" aria-label="Step-by-step REA setup">
+          <section class="article-section" id="pieces">
+            <h2>How the pieces fit</h2>
+            <p>
+              The AI chat in your web browser can't open programs or files on
+              your computer. A desktop AI app can, once a tool such as REA is
+              connected to it. REA is the part that looks inside a program and
+              reports what it finds.
+            </p>
+            <figure class="workflow-figure">
+              <p class="figure-title">Who does what</p>
+              <ol class="flow-steps">
+                <li>
+                  <span class="flow-label">You</span
+                  ><span class="flow-node">Ask a question in plain words</span
+                  ><span class="flow-note"
+                    >“What happens when I click Export in this app?”</span
+                  >
+                </li>
+                <li>
+                  <span class="flow-label">Your AI app</span
+                  ><span class="flow-node">Decides what to look at</span
+                  ><span class="flow-note"
+                    >Claude, ChatGPT's Codex or another agent on your
+                    computer.</span
+                  >
+                </li>
+                <li>
+                  <span class="flow-label">REA</span
+                  ><span class="flow-node">Reads the program's code</span
+                  ><span class="flow-note"
+                    >Returns the code and where it was found, so the AI can
+                    explain it.</span
+                  >
+                </li>
+              </ol>
+              <figcaption>
+                You need two things on your computer: an AI app and REA. The
+                steps below install both and connect them.
+              </figcaption>
+            </figure>
+            <details class="evidence-details">
+              <summary>Words you'll see on this page</summary>
+              <dl class="word-list">
+                <dt>Terminal</dt>
+                <dd>
+                  A window where you type instructions instead of clicking.
+                  Every computer has one.
+                </dd>
+                <dt>Command</dt>
+                <dd>
+                  One line of text you paste into the terminal and run by
+                  pressing Enter.
+                </dd>
+                <dt>Path</dt>
+                <dd>
+                  The address of a file or folder, such as
+                  <code>/Users/sam/Downloads/notes-example</code>. Step 8 shows
+                  how to copy one.
+                </dd>
+                <dt>MCP</dt>
+                <dd>
+                  The standard way AI apps connect to tools like REA. Setup
+                  configures it for you; you never edit it by hand.
+                </dd>
+              </dl>
+            </details>
+          </section>
+
+          <section class="article-section" id="app">
+            <p class="step-label">Step 1</p>
+            <h2>Get an AI app for your computer</h2>
+            <p>Pick the one that matches the AI you already use:</p>
+            <ul class="choice-list">
+              <li>
+                <strong>You use Claude in the browser.</strong> Install
+                <a href="https://claude.ai/download">Claude Desktop</a> and sign
+                in with the same account.
+              </li>
+              <li>
+                <strong>You use ChatGPT.</strong> Install
+                <a href="https://developers.openai.com/codex">Codex</a>,
+                OpenAI's coding agent, and sign in with your ChatGPT account.
+              </li>
+              <li>
+                <strong>You already use a coding agent</strong> such as Claude
+                Code, Cursor or Gemini CLI. Keep it and go to step 2.
+              </li>
+            </ul>
+            <p>
+              Open the app once to finish signing in, then leave it. This guide
+              shows Claude Desktop; the other apps follow the same steps.
+            </p>
+          </section>
+
+          <section class="article-section" id="node">
+            <p class="step-label">Step 2</p>
+            <h2>Install Node.js</h2>
+            <p>
+              REA runs on Node.js, a free program that many developer tools use.
+              REA doesn't install it for you, so do this once:
+            </p>
+            <ol class="numbered-steps">
+              <li>
+                Open the
+                <a href="https://nodejs.org/en/download"
+                  >Node.js download page</a
+                >.
+              </li>
+              <li>
+                Choose the <strong>LTS</strong> version (“long-term support”)
+                and the <strong>installer</strong> for your computer: a
+                <code>.pkg</code> file on a Mac or an <code>.msi</code> file on
+                Windows.
+              </li>
+              <li>
+                Open the downloaded file and click <strong>Continue</strong> or
+                <strong>Next</strong> until it finishes. Keep the default
+                options.
+              </li>
+            </ol>
+            <p class="caption">
+              On Linux, use the instructions for your distribution on the same
+              page. REA works with Node.js 22 (22.19 or newer), 24 (24.11 or
+              newer) and 26 or newer.
+            </p>
+          </section>
+
+          <section class="article-section" id="terminal">
+            <p class="step-label">Step 3</p>
+            <h2>Open the terminal</h2>
+            <ul class="choice-list">
+              <li>
+                <strong>Mac:</strong> press <kbd>⌘ Command</kbd> +
+                <kbd>Space</kbd>, type <code>Terminal</code> and press
+                <kbd>Return</kbd>.
+              </li>
+              <li>
+                <strong>Windows:</strong> press the <kbd>Windows</kbd> key, type
+                <code>cmd</code> and press <kbd>Enter</kbd> to open
+                <strong>Command Prompt</strong>. Use Command Prompt rather than
+                PowerShell for these steps.
+              </li>
+              <li>
+                <strong>Linux:</strong> press <kbd>Ctrl</kbd> + <kbd>Alt</kbd> +
+                <kbd>T</kbd>, or open Terminal from your apps.
+              </li>
+            </ul>
+            <p>
+              Check that Node.js is installed. Type this line, then press
+              <kbd>Enter</kbd>:
+            </p>
+            <div class="code-block code-inline">
+              <code id="setup-node-version">node -v</code>
+              <button
+                class="copy-button"
+                type="button"
+                data-copy="setup-node-version"
+                aria-label="Copy Node.js version check"
+              >
+                Copy
+              </button>
+            </div>
+            <figure class="screen-figure">
+              <div class="screen">
+                <div class="screen-bar">
+                  <span class="terminal-dots" aria-hidden="true"
+                    ><i></i><i></i><i></i></span
+                  >Terminal
+                </div>
+                <pre class="screen-body"><code>$ node -v
+<mark>v24.11.1</mark></code></pre>
+              </div>
+              <figcaption>
+                Example result. A number starting with <code>v22</code>,
+                <code>v24</code> or <code>v26</code> means you're ready. The
+                <code>$</code> stands for the text your terminal shows before
+                the cursor; it differs on every computer.
+              </figcaption>
+            </figure>
+            <p>
+              If the terminal says <code>command not found</code> or
+              <code>is not recognized</code>, close the terminal, open a new one
+              and try again. A terminal opened before the installation can't see
+              Node.js yet.
+            </p>
+          </section>
+
+          <section class="article-section" id="run">
+            <p class="step-label">Step 4</p>
+            <h2>Run REA setup</h2>
+            <p>
+              Click <strong>Copy</strong>, paste the command into the terminal
+              and press <kbd>Enter</kbd>:
+            </p>
+            <div class="code-block code-inline">
+              <code id="setup-command">npx rea-agents@latest setup</code>
+              <button
+                class="copy-button"
+                type="button"
+                data-copy="setup-command"
+                aria-label="Copy REA setup command"
+              >
+                Copy
+              </button>
+            </div>
+            <p class="caption">
+              To paste: <kbd>⌘ Command</kbd> + <kbd>V</kbd> on a Mac,
+              <kbd>Ctrl</kbd> + <kbd>V</kbd> in Windows Command Prompt, or
+              <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd> in most Linux
+              terminals.
+            </p>
+            <p>
+              The first time, npm asks before downloading REA. Type
+              <kbd>y</kbd> and press <kbd>Enter</kbd>.
+            </p>
+            <figure class="screen-figure">
+              <div class="screen">
+                <div class="screen-bar">
+                  <span class="terminal-dots" aria-hidden="true"
+                    ><i></i><i></i><i></i></span
+                  >Terminal
+                </div>
+                <pre class="screen-body"><code>$ npx rea-agents@latest setup
+Need to install the following packages:
+rea-agents@6.3.0
+Ok to proceed? (y) <mark>y</mark></code></pre>
+              </div>
+              <figcaption>
+                The version number will be newer when REA releases an update.
+                This only downloads REA; nothing on your computer changes until
+                step 6.
+              </figcaption>
+            </figure>
+          </section>
+
+          <section class="article-section" id="choose">
+            <p class="step-label">Step 5</p>
+            <h2>Choose your AI app</h2>
+            <p>Setup shows a list of AI apps. Use the keyboard:</p>
+            <ol class="numbered-steps">
+              <li>
+                Press <kbd>↓</kbd> to move to your app, for example
+                <strong>Claude Desktop</strong>.
+              </li>
+              <li>
+                Press <kbd>Space</kbd> to tick it. The empty box
+                <code>◻</code> turns into a filled box <code>◼</code>.
+              </li>
+              <li>Press <kbd>Enter</kbd> to continue.</li>
+            </ol>
+            <figure class="screen-figure">
+              <div class="screen">
+                <div class="screen-bar">
+                  <span class="terminal-dots" aria-hidden="true"
+                    ><i></i><i></i><i></i></span
+                  >Terminal
+                </div>
+                <pre class="screen-body"><code>┌  REA setup
+│  Understand local apps and binaries from your terminal or agent.
+│
+◆  No agents detected. Choose any supported agent below.
+│
+│  Keys: ↑/↓ navigate · Space toggle · Enter confirm · Ctrl-C cancel
+│
+◆  Which agents should use REA?
+│  ◻ Claude Code
+│  <mark>◼ Claude Desktop</mark> (Not detected · configuration is still available)
+│  ◻ Codex
+│  ◻ Cursor
+│  ◻ Gemini CLI
+│  …
+│  ↑/↓ to navigate • Space: select • Enter: confirm
+└</code></pre>
+              </div>
+              <figcaption>
+                Recorded from REA 6.3.0 with Claude Desktop ticked; the full
+                list is longer. “Not detected” is fine: setup can still connect
+                an app it didn't find.
+              </figcaption>
+            </figure>
+            <p>
+              On a Mac or Linux, setup may also ask
+              <strong>“Install Hopper for deep binary analysis?”</strong> Press
+              <kbd>Enter</kbd> to keep <strong>No</strong>. You only need Hopper
+              for compiled programs, and you can add it later from the
+              <a href="../../get-started/#native">native analysis setup</a>.
+            </p>
+          </section>
+
+          <section class="article-section" id="approve">
+            <p class="step-label">Step 6</p>
+            <h2>Approve the changes</h2>
+            <p>
+              Before it changes anything, setup lists exactly what it will do.
+            </p>
+            <figure class="screen-figure">
+              <div class="screen">
+                <div class="screen-bar">
+                  <span class="terminal-dots" aria-hidden="true"
+                    ><i></i><i></i><i></i></span
+                  >Terminal
+                </div>
+                <pre class="screen-body"><code>◆  Ready to review
+│
+│  <mark>CREATE  Claude Desktop</mark>
+│          ~/Library/Application Support/Claude/claude_desktop_config.json
+│          Add the REA MCP registration for Claude Desktop;
+│          preserve unrelated configuration.
+│
+│  <mark>INSTALL  REA reverse-engineering skill</mark>
+│          ~/.agents/skills/reverse-engineer-anything
+│          Install or update the bundled REA reverse-engineering
+│          skill and on-demand references.
+│
+◆  Apply these 2 changes?
+│  <mark>● Yes, apply</mark> / ○ No, cancel
+└</code></pre>
+              </div>
+              <figcaption>
+                Shortened from a REA 6.3.0 recording on a Mac: some detail lines
+                are left out, long lines are wrapped and your home folder is
+                shown as <code>~</code>.
+              </figcaption>
+            </figure>
+            <ul class="choice-list">
+              <li>
+                <strong>CREATE</strong> adds REA to your AI app's settings file.
+                Your other settings stay as they are; if the file already
+                exists, setup keeps a backup.
+              </li>
+              <li>
+                <strong>INSTALL</strong> adds a short instruction set that
+                teaches coding agents how to use REA.
+              </li>
+            </ul>
+            <p>
+              <strong>Yes, apply</strong> is already selected. Press
+              <kbd>Enter</kbd>. To stop instead, press <kbd>Ctrl</kbd> +
+              <kbd>C</kbd>; nothing is changed.
+            </p>
+          </section>
+
+          <section class="article-section" id="restart">
+            <p class="step-label">Step 7</p>
+            <h2>Restart your AI app</h2>
+            <p>When setup finishes, it tells you what to restart:</p>
+            <figure class="screen-figure">
+              <div class="screen">
+                <div class="screen-bar">
+                  <span class="terminal-dots" aria-hidden="true"
+                    ><i></i><i></i><i></i></span
+                  >Terminal
+                </div>
+                <pre class="screen-body"><code>◆  What you can do now
+│  Agent access: Claude Desktop
+│  Guided reverse-engineering workflows: installed
+│  CLI: npx rea-agents capabilities
+│  Try in Claude Desktop: "Explain how a feature works in
+│  /path/to/app and show the evidence."
+│
+└  <mark>Restart Claude Desktop to load REA.</mark></code></pre>
+              </div>
+              <figcaption>Recorded from REA 6.3.0 on a Mac.</figcaption>
+            </figure>
+            <p>
+              Quit the app completely, then open it again. Closing its window
+              isn't enough:
+            </p>
+            <ul class="choice-list">
+              <li>
+                <strong>Mac:</strong> click the app, then press
+                <kbd>⌘ Command</kbd> + <kbd>Q</kbd>.
+              </li>
+              <li>
+                <strong>Windows:</strong> choose <strong>Quit</strong> or
+                <strong>Exit</strong> from the app's menu, or right-click its
+                icon next to the clock and choose <strong>Quit</strong>.
+              </li>
+              <li>
+                <strong>A terminal agent</strong> such as Claude Code or Codex:
+                exit it and start it again.
+              </li>
+            </ul>
+            <p>You can close the terminal now.</p>
+          </section>
+
+          <section class="article-section" id="ask">
+            <p class="step-label">Step 8</p>
+            <h2>Ask your first question</h2>
+            <p>
+              Try REA on a small example app with an
+              <strong>Export notes</strong> button. You don't need to run it;
+              REA reads its code.
+            </p>
+            <ol class="numbered-steps">
+              <li>
+                <a
+                  href="../../examples/notes-example.zip"
+                  download="notes-example.zip"
+                  >Download the example ZIP</a
+                >
+                and unzip it: double-click it on a Mac, or right-click it on
+                Windows and choose <strong>Extract All</strong>.
+              </li>
+              <li>
+                Copy the prompt below and paste it into your AI app. Don't send
+                it yet.
+              </li>
+              <li>
+                Copy the path of the <code>notes-example</code> folder:
+                <ul>
+                  <li>
+                    <strong>Mac:</strong> right-click the folder, hold
+                    <kbd>⌥ Option</kbd> and choose
+                    <strong>Copy “notes-example” as Pathname</strong>.
+                  </li>
+                  <li>
+                    <strong>Windows:</strong> right-click the folder and choose
+                    <strong>Copy as path</strong>. On Windows 10, hold
+                    <kbd>Shift</kbd> while you right-click.
+                  </li>
+                </ul>
+              </li>
+              <li>
+                Paste the path at the end of your message and send it. If your
+                app asks whether it may use a REA tool, allow it.
+              </li>
+            </ol>
+            <div class="agent-terminal">
+              <div class="terminal-header">
+                <span class="terminal-title"
+                  ><span class="terminal-dots" aria-hidden="true"
+                    ><i></i><i></i><i></i></span
+                  >Your AI app</span
+                >
+                <button
+                  class="copy-button"
+                  type="button"
+                  data-copy="setup-first-prompt"
+                  aria-label="Copy first question"
+                >
+                  Copy
+                </button>
+              </div>
+              <p class="terminal-prompt">
+                <span class="prompt-symbol" aria-hidden="true">›</span
+                ><span id="setup-first-prompt"
+                  >Use REA to look at the small app in the folder below. What
+                  happens when I click Export notes, and where is notes.csv
+                  saved? Show the files and lines. Folder:</span
+                ><span class="terminal-cursor" aria-hidden="true"></span>
+              </p>
+            </div>
+            <figure class="screen-figure">
+              <div class="screen chat-screen">
+                <div class="screen-bar">
+                  <span class="terminal-dots" aria-hidden="true"
+                    ><i></i><i></i><i></i></span
+                  >Your AI app
+                </div>
+                <div class="chat-body">
+                  <p class="chat-message chat-you">
+                    Use REA to look at the small app in the folder below. What
+                    happens when I click Export notes, and where is notes.csv
+                    saved? Show the files and lines. Folder:
+                    <mark>/Users/sam/Downloads/notes-example</mark>
+                  </p>
+                  <p class="chat-message chat-ai">
+                    The button calls <code>notes.exportCsv()</code>, which sends
+                    a <code>notes:export</code> message to the main process.
+                    There, <code>main.js</code> (lines 8–12) formats the notes
+                    as CSV and writes <code>notes.csv</code> to your Downloads
+                    folder…
+                  </p>
+                </div>
+              </div>
+              <figcaption>
+                Illustration with an example path. Your path and the AI's
+                wording will differ; look for the
+                <code>notes:export</code> message, <code>main.js</code> and the
+                Downloads folder.
+              </figcaption>
+            </figure>
+            <p>
+              <strong>You're set up.</strong> To understand that answer and
+              check one detail yourself, continue with
+              <a href="../../first-investigation/#answer"
+                >your first investigation</a
+              >. To try your own programs, pick a guide:
+            </p>
+            <ul class="reading-list">
+              <li>
+                <a href="../javascript/">Trace an Electron CSV export</a
+                ><span
+                  >Desktop apps built with web technology. No extra tools
+                  needed.</span
+                >
+              </li>
+              <li>
+                <a href="../browser/">See what happens when you click</a
+                ><span
+                  >Websites, using Chrome or another Chromium browser.</span
+                >
+              </li>
+              <li>
+                <a href="../native/">Recover a calculation from a game</a
+                ><span
+                  >Compiled programs such as <code>.exe</code> files. Needs
+                  Ghidra, Hopper or IDA.</span
+                >
+              </li>
+            </ul>
+          </section>
+
+          <section class="article-section" id="trouble">
+            <h2>If something goes wrong</h2>
+            <details class="evidence-details">
+              <summary>
+                “command not found: npx” or “'npx' is not recognized”
+              </summary>
+              <p>
+                The terminal can't find Node.js. Close every terminal window,
+                open a new one and run <code>node -v</code>. If it still fails,
+                install Node.js again from <a href="#node">step 2</a>.
+              </p>
+            </details>
+            <details class="evidence-details">
+              <summary>“running scripts is disabled on this system”</summary>
+              <p>
+                You're in Windows PowerShell, which blocks <code>npx</code> on
+                many computers. Open <strong>Command Prompt</strong> instead (<a
+                  href="#terminal"
+                  >step 3</a
+                >) and paste the command there.
+              </p>
+            </details>
+            <details class="evidence-details">
+              <summary>Setup says my Node.js version isn't supported</summary>
+              <p>
+                Install the current LTS version from
+                <a href="#node">step 2</a>, open a new terminal and run setup
+                again.
+              </p>
+            </details>
+            <details class="evidence-details">
+              <summary>My AI app doesn't use REA</summary>
+              <p>
+                Quit the app completely and open it again (<a href="#restart"
+                  >step 7</a
+                >). If it still doesn't, check the connection from the terminal.
+                For Claude Desktop:
+              </p>
+              <div class="code-block code-inline">
+                <code id="setup-doctor"
+                  >npx rea-agents@latest doctor --client claude_desktop</code
+                >
+                <button
+                  class="copy-button"
+                  type="button"
+                  data-copy="setup-doctor"
+                  aria-label="Copy connection check"
+                >
+                  Copy
+                </button>
+              </div>
+              <p>
+                The first line should say <code>healthy: true</code>. Lines
+                about Hopper, Ghidra and IDA only matter for compiled programs.
+                For another app, replace <code>claude_desktop</code> with
+                <code>codex</code>, <code>claude_code</code>,
+                <code>cursor</code> or <code>gemini_cli</code>.
+              </p>
+            </details>
+            <details class="evidence-details">
+              <summary>I chose the wrong app, or want to add another</summary>
+              <p>
+                Run the setup command from <a href="#run">step 4</a> again. Apps
+                you already connected are ticked; tick the one you want and
+                press <kbd>Enter</kbd>.
+              </p>
+            </details>
+            <p>
+              Still stuck? Read the <a href="../../faq/">FAQ</a>, ask in the
+              <a href="https://discord.gg/GkcryMnJDM">REA community</a> or
+              <a href="https://github.com/morluto/rea/issues"
+                >report a problem</a
+              >. Include what you typed and what the terminal printed.
+            </p>
+          </section>
+        </article>
+      </div>
+    </main>
+    <!-- website:footer:start -->
+    <!-- prettier-ignore -->
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <p>REA · Reverse Engineer Anything</p>
+        <div class="footer-links">
+          <a href="https://github.com/morluto/rea">Source</a
+          ><a href="https://github.com/morluto/rea/blob/main/LICENSE">MIT license</a
+          ><a href="https://discord.gg/GkcryMnJDM">Join the community</a
+          ><a href="https://x.com/reatools">Follow us on X</a>
+        </div>
+      </div>
+    </footer>
+    <p class="sr-only" id="copy-status" role="status" aria-live="polite"></p>
+    <a class="back-to-top" href="#top" aria-label="Back to top">
+      <span aria-hidden="true">↑</span> Top
+    </a>
+    <!-- website:footer:end -->
+  </body>
+</html>

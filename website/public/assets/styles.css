@@ -1454,6 +1454,121 @@ pre code {
 .example-files li + li {
   margin: 0;
 }
+.step-label {
+  margin: 0 0 0.4rem;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.choice-list,
+.numbered-steps {
+  margin-block: 0 1.4rem;
+}
+.choice-list li + li,
+.numbered-steps li + li {
+  margin-top: 0.55rem;
+}
+.numbered-steps ul {
+  margin-top: 0.45rem;
+}
+kbd {
+  display: inline-block;
+  padding: 0 0.4em;
+  border: 1px solid #c9d2db;
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--soft);
+  font-family: inherit;
+  font-size: 0.85em;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.word-list {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.6rem 1.2rem;
+  margin: 0;
+}
+.word-list dt {
+  font-weight: 600;
+}
+.word-list dd {
+  margin: 0;
+  color: var(--muted);
+}
+.screen-figure {
+  margin: 1.5rem 0 1.8rem;
+}
+.screen {
+  overflow: hidden;
+  border: 1px solid #303d4a;
+  border-radius: 8px;
+  background: #202933;
+  color: #f1f4f8;
+}
+.screen-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 1rem;
+  border-bottom: 1px solid #384551;
+  color: #bdc8d4;
+  font-size: 0.8rem;
+}
+.screen-body {
+  padding: 1.1rem 1.2rem;
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+.screen mark {
+  padding: 0.05em 0.25em;
+  border-radius: 3px;
+  background: #3f6593;
+  color: #ffffff;
+}
+.chat-screen {
+  border-color: var(--line);
+  background: #fafbfc;
+  color: var(--ink);
+}
+.chat-screen .screen-bar {
+  border-color: var(--line);
+  color: var(--muted);
+}
+.chat-screen .terminal-dots i {
+  background: #b8c2cc;
+}
+.chat-screen mark {
+  background: #dce8f6;
+  color: var(--ink);
+}
+.chat-body {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1.2rem;
+  font-size: 0.9rem;
+}
+.chat-message {
+  max-width: 85%;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+}
+.chat-you {
+  justify-self: end;
+  background: #e8eef5;
+}
+.chat-ai {
+  border: 1px solid var(--line);
+  background: var(--page);
+}
+.screen-figure figcaption {
+  margin-top: 0.7rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
 .example-app {
   max-width: 720px;
   padding-block: 3.5rem;
@@ -2289,6 +2404,16 @@ pre code {
 }
 
 @media (max-width: 640px) {
+  .word-list {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.2rem;
+  }
+  .word-list dd + dt {
+    margin-top: 0.6rem;
+  }
+  .chat-message {
+    max-width: 100%;
+  }
   .home-definition {
     grid-template-columns: 1fr;
     gap: 0.8rem;
