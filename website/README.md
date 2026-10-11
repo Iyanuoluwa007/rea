@@ -89,9 +89,12 @@ python3 scripts/website.py check
 This checks shared HTML without rewriting it, prepares generated assets, and
 checks page links, copied-text targets, repository documentation links, SEO
 metadata and the publishing configuration. It also runs the maintenance
-regressions. A stale shared region fails with the command needed to fix it.
-PR checks and the manual publisher run this same command. The checks work
-offline after the Python dependencies are installed.
+regressions and `scripts/test-website-scripts.mjs`, which runs the page scripts
+against a small document model with Node.js and checks that a missing message
+attribute leaves the existing text in place. A stale shared region fails with
+the command needed to fix it. PR checks and the manual publisher run this same
+command. The checks work offline after the Python dependencies are installed,
+using the repository's Node.js version.
 
 For an optional external-link audit, with GitHub CLI available:
 

@@ -6,8 +6,14 @@ function initializePercentDemo() {
   const status = demo.querySelector("[data-percent-status]");
   const equals = demo.querySelector('[data-percent-key="equals"]');
   // The page owns the localized messages; {name} marks an inserted value.
+  // A missing message leaves the current text in place.
   const message = (name, values = {}) =>
-    demo.dataset[name].replace(/\{(\w+)\}/g, (_, key) => values[key]);
+    demo.dataset[name]?.replace(/\{(\w+)\}/g, (match, key) =>
+      String(values[key] ?? match),
+    );
+  const show = (element, text) => {
+    if (text) element.textContent = text;
+  };
   const operations = demo.querySelectorAll("[data-percent-operation]");
   let operation = "add";
   let stage = "input";
@@ -25,12 +31,14 @@ function initializePercentDemo() {
       stage === "input" ? current : stage === "percent" ? percent : result,
     );
     equals.disabled = stage !== "percent";
-    status.textContent =
+    show(
+      status,
       stage === "input"
         ? message("msgInput")
         : stage === "percent"
           ? message(adding ? "msgPercentAdd" : "msgPercentMultiply")
-          : message("msgResult", { operator, percent, result });
+          : message("msgResult", { operator, percent, result }),
+    );
   };
 
   operations.forEach((button) => {

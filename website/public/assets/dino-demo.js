@@ -12,8 +12,14 @@ function initializeDinoDemo(demo) {
   const output = demo.querySelector("[data-dino-speed]");
   const status = demo.querySelector("[data-dino-status]");
   // The page owns the localized messages; {name} marks an inserted value.
+  // A missing message leaves the current text in place.
   const message = (name, values = {}) =>
-    demo.dataset[name].replace(/\{(\w+)\}/g, (_, key) => values[key]);
+    demo.dataset[name]?.replace(/\{(\w+)\}/g, (match, key) =>
+      String(values[key] ?? match),
+    );
+  const show = (element, text) => {
+    if (text) element.textContent = text;
+  };
   const ground = 148;
   const dinosaurX = 52;
   const dinosaur = new Path2D(
@@ -69,29 +75,23 @@ function initializeDinoDemo(demo) {
     context.fillStyle = "#5b6570";
     context.font = "13px monospace";
     context.textAlign = "right";
-    context.fillText(
-      message("msgDistance", {
-        distance: String(Math.floor(distance / 100)).padStart(4, "0"),
-      }),
-      580,
-      28,
-    );
-    if (!running) {
+    const score = message("msgDistance", {
+      distance: String(Math.floor(distance / 100)).padStart(4, "0"),
+    });
+    if (score) context.fillText(score, 580, 28);
+    const hint = message(crashed ? "msgCanvasCrashed" : "msgCanvasReady");
+    if (!running && hint) {
       context.textAlign = "center";
       context.font = "15px system-ui";
-      context.fillText(
-        message(crashed ? "msgCanvasCrashed" : "msgCanvasReady"),
-        330,
-        85,
-      );
+      context.fillText(hint, 330, 85);
     }
   };
 
   const stop = (notice) => {
     running = false;
     cancelAnimationFrame(frame);
-    start.textContent = message(crashed ? "msgPlayAgain" : "msgPlay");
-    if (notice) status.textContent = notice;
+    show(start, message(crashed ? "msgPlayAgain" : "msgPlay"));
+    show(status, notice);
     draw();
   };
 
@@ -104,8 +104,8 @@ function initializeDinoDemo(demo) {
     obstacles = [{ x: 550, height: 38 }];
     if (auto.checked) speed = SPEED_RULE.start;
     elapsed = 0;
-    start.textContent = message("msgPlay");
-    status.textContent = message("msgReady");
+    show(start, message("msgPlay"));
+    show(status, message("msgReady"));
     updateSpeedDisplay();
     draw();
   };
@@ -162,8 +162,8 @@ function initializeDinoDemo(demo) {
     running = true;
     lastTime = performance.now();
     elapsed = 0;
-    start.textContent = message("msgPause");
-    status.textContent = message("msgRunning");
+    show(start, message("msgPause"));
+    show(status, message("msgRunning"));
     frame = requestAnimationFrame(animate);
   };
 
@@ -193,18 +193,23 @@ function initializeDinoDemo(demo) {
     auto.checked = false;
     speed = Number(slider.value);
     updateSpeedDisplay();
-    status.textContent = message(
-      running ? "msgFixedRunning" : "msgFixedStopped",
-      { speed: speed.toFixed(1) },
+    show(
+      status,
+      message(running ? "msgFixedRunning" : "msgFixedStopped", {
+        speed: speed.toFixed(1),
+      }),
     );
     draw();
   });
   auto.addEventListener("change", () => {
     if (auto.checked) speed = SPEED_RULE.start;
     updateSpeedDisplay();
-    status.textContent = auto.checked
-      ? message("msgRule")
-      : message("msgFixed", { speed: speed.toFixed(1) });
+    show(
+      status,
+      auto.checked
+        ? message("msgRule")
+        : message("msgFixed", { speed: speed.toFixed(1) }),
+    );
   });
   document.addEventListener("visibilitychange", () => {
     if (document.hidden && running) stop(message("msgPaused"));
@@ -235,7 +240,6 @@ speedCheck?.addEventListener("click", () => {
       matches && speed === cell.parentElement.children[1].textContent.trim();
   });
   const status = document.querySelector("[data-speed-check-status]");
-  status.textContent = matches
-    ? status.dataset.msgMatch
-    : status.dataset.msgMismatch;
+  const result = matches ? status.dataset.msgMatch : status.dataset.msgMismatch;
+  if (result) status.textContent = result;
 });

@@ -30,5 +30,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y libcairo2 fonts-dejavu-core
           python3 -m pip install -r website/requirements.txt
+      - name: Set up Node.js for website script tests
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
       - name: Check shared HTML, links, assets and contributor workflows
         run: python3 scripts/website.py check

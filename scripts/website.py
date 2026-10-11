@@ -179,6 +179,14 @@ def run_script(root, name, arguments=()):
     subprocess.run([sys.executable, str(root / "scripts" / name), *arguments], cwd=root, check=True)
 
 
+def run_browser_script_tests(root):
+    """Run the page-script regressions with the repository's Node.js."""
+    try:
+        subprocess.run(["node", str(root / "scripts/test-website-scripts.mjs")], cwd=root, check=True)
+    except FileNotFoundError as error:
+        raise OSError("The website script tests need Node.js; see website/README.md.") from error
+
+
 def preview_handler(site, prefix):
     """Serve one static directory at root or a Pages prefix, preserving redirects."""
     class Handler(SimpleHTTPRequestHandler):
@@ -221,6 +229,7 @@ def main():
             sync_pages(root, check=True)
             for name in ("prepare-website.py", "verify-website.py", "test-website.py"):
                 run_script(root, name)
+            run_browser_script_tests(root)
         elif args.command == "links":
             run_script(root, "audit-website-links.py", ["--report", args.report] if args.report else [])
         else:

@@ -1,11 +1,15 @@
 function initializeCopyButtons() {
-  // The shared footer owns the localized copy messages.
+  // The shared footer owns the localized copy messages. Without one, a button
+  // still copies and keeps its own label.
   const status = document.getElementById("copy-status");
-  if (status === null) return;
-  const messages = status.dataset;
+  const messages = status?.dataset ?? {};
 
   document.querySelectorAll("[data-copy]").forEach((button) => {
     const label = button.textContent;
+    const report = (buttonText, statusText) => {
+      if (buttonText) button.textContent = buttonText;
+      if (status !== null && statusText) status.textContent = statusText;
+    };
     button.addEventListener("click", async () => {
       const target = document.getElementById(button.getAttribute("data-copy"));
       if (target === null) return;
@@ -17,8 +21,7 @@ function initializeCopyButtons() {
           : content.replace(/\s+/g, " ");
       try {
         await navigator.clipboard.writeText(text);
-        button.textContent = messages.copied;
-        status.textContent = messages.statusCopied;
+        report(messages.copied, messages.statusCopied);
       } catch {
         const range = document.createRange();
         range.selectNodeContents(target);
@@ -27,8 +30,7 @@ function initializeCopyButtons() {
           selection.removeAllRanges();
           selection.addRange(range);
         }
-        button.textContent = messages.selected;
-        status.textContent = messages.statusSelected;
+        report(messages.selected, messages.statusSelected);
       }
 
       window.setTimeout(() => {
@@ -138,7 +140,7 @@ async function initializeGitHubStars() {
     const template =
       link.dataset[`label${category[0].toUpperCase()}${category.slice(1)}`] ??
       link.dataset.labelOther;
-    if (template === undefined) return;
+    if (!template) return;
     const formatted = new Intl.NumberFormat(lang).format(stars);
     const label = template.replace("{count}", formatted);
     count.textContent = formatted;
