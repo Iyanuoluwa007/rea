@@ -143,25 +143,27 @@ export const analyzeAndAdoptJavaScriptArtifactFiles = async (
   const selectedFileCount =
     fileSet.files.length - (fileSet.source_selection?.unselected_files ?? 0);
   let selectedFileIndex = 0;
+  // Caller-excluded sources are never analyzed, so neither cancellation nor
+  // another interruption describes them.
+  const recordOutsideSelection = (file: JavaScriptArtifactFile): boolean => {
+    if (file.text.included || file.text.reason !== "outside-analysis-scope")
+      return false;
+    state.files.push({ file, javascript: null, semantic: null });
+    if (file.kind === "javascript")
+      projection.recordUnavailableFile(
+        file,
+        "Source was not analyzed because it is outside the caller-selected source_paths.",
+        null,
+        "incomplete-module",
+      );
+    return true;
+  };
   for (const file of fileSet.files) {
     try {
       await setImmediate();
       if (signal?.aborted === true)
         throw new AnalysisCancelledError("analyze_javascript_application");
-      if (
-        !file.text.included &&
-        file.text.reason === "outside-analysis-scope"
-      ) {
-        state.files.push({ file, javascript: null, semantic: null });
-        if (file.kind === "javascript")
-          projection.recordUnavailableFile(
-            file,
-            "Source was not analyzed because it is outside the caller-selected source_paths.",
-            null,
-            "incomplete-module",
-          );
-        continue;
-      }
+      if (recordOutsideSelection(file)) continue;
       await beforeFile(file, selectedFileIndex++, selectedFileCount);
       if (file.kind !== "javascript" || !file.text.included) {
         const steps = analyzeArtifactFileSteps(file, {
@@ -252,7 +254,7 @@ export const analyzeAndAdoptJavaScriptArtifactFiles = async (
           : cause instanceof AnalysisError
             ? cause
             : null;
-      if (interruption !== null) {
+      if (interruption !== null && !recordOutsideSelection(file)) {
         state.files.push({
           file,
           javascript: null,
@@ -286,21 +288,8 @@ export const analyzeAndAdoptJavaScriptArtifactFiles = async (
             : null,
     };
     for (const file of fileSet.files) {
-      if (analyzedPaths.has(file.path)) continue;
-      if (
-        !file.text.included &&
-        file.text.reason === "outside-analysis-scope"
-      ) {
-        state.files.push({ file, javascript: null, semantic: null });
-        if (file.kind === "javascript")
-          projection.recordUnavailableFile(
-            file,
-            "Source was not analyzed because it is outside the caller-selected source_paths.",
-            null,
-            "incomplete-module",
-          );
+      if (analyzedPaths.has(file.path) || recordOutsideSelection(file))
         continue;
-      }
       state.files.push({
         file,
         javascript: null,
