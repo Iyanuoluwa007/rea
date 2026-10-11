@@ -156,6 +156,35 @@
           </ul>
         </nav>
         <article class="article" aria-label="Native analysis">
+          <aside class="before-start" aria-labelledby="native-before">
+            <p class="before-start-title" id="native-before">
+              Before you start
+            </p>
+            <ul>
+              <li>
+                <strong>Advanced guide.</strong> New to REA? Start with the
+                <a href="../javascript/">JavaScript guide</a>; it needs no extra
+                tools.
+              </li>
+              <li>
+                <strong>You need</strong> REA connected to an AI app (<a
+                  href="../setup/"
+                  >step-by-step setup</a
+                >) and a native analysis tool: Ghidra, Hopper or IDA, connected
+                as in
+                <a href="../../get-started/#native">Set up native analysis</a>.
+              </li>
+              <li>
+                <strong>To follow along,</strong> use your own copy of the
+                Windows game DX-Ball 1.07, or any other program you want to
+                study.
+              </li>
+            </ul>
+            <p class="caption">
+              A native program is compiled to machine code, such as a Windows
+              <code>.exe</code> file. Its original source code isn't included.
+            </p>
+          </aside>
           <section class="article-section" id="example">
             <h2>Calculate left/right sound panning</h2>
             <p>
@@ -343,6 +372,10 @@ return (DxBallInt)pan;</code></pre>
               <pre><code id="native-command">npx -y rea-agents@latest function /absolute/path/to/program main \
   --provider ghidra --json</code></pre>
             </div>
+            <p class="caption">
+              In Windows Command Prompt, put the command on one line and leave
+              out the <code>\</code> characters.
+            </p>
             <p>
               Replace the target path and <code>main</code> with your own
               function name or address. Each CLI invocation imports and analyzes

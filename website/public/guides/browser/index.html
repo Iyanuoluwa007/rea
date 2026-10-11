@@ -157,6 +157,27 @@
           </ul>
         </nav>
         <article class="article" aria-label="Browser observation">
+          <aside class="before-start" aria-labelledby="browser-before">
+            <p class="before-start-title" id="browser-before">
+              Before you start
+            </p>
+            <ul>
+              <li>
+                <strong>About 10 minutes.</strong> You paste one command to open
+                Chrome, then click a button.
+              </li>
+              <li>
+                <strong>You need</strong> REA connected to an AI app and Google
+                Chrome. New to this?
+                <a href="../setup/">Set up REA step by step</a>.
+              </li>
+              <li>
+                <strong>Your normal browsing stays separate.</strong> The
+                command opens Chrome with an empty profile, without your tabs,
+                logins or history.
+              </li>
+            </ul>
+          </aside>
           <section class="article-section" id="example">
             <h2>What happens when you click Export?</h2>
             <p>
@@ -207,16 +228,48 @@
             <h2>Open Chrome with remote debugging</h2>
             <p>
               Open the hosted Notes example with a separate browser profile and
-              a local debugging port. On Linux:
+              a local debugging port. Copy the command for your computer into
+              the terminal and press <kbd>Enter</kbd>.
             </p>
             <div class="code-block">
               <div class="code-header">
-                <span>Start the example browser</span
+                <span>Start the example browser · Mac</span
+                ><button
+                  class="copy-button"
+                  type="button"
+                  data-copy="browser-start-mac"
+                  aria-label="Copy start the example browser on a Mac"
+                >
+                  Copy
+                </button>
+              </div>
+              <pre><code id="browser-start-mac">open -na "Google Chrome" --args \
+  --remote-debugging-port=9222 \
+  --user-data-dir=/tmp/rea-notes-browser \
+  https://rea.tools/examples/notes-web/</code></pre>
+            </div>
+            <div class="code-block">
+              <div class="code-header">
+                <span>Start the example browser · Windows Command Prompt</span
+                ><button
+                  class="copy-button"
+                  type="button"
+                  data-copy="browser-start-windows"
+                  aria-label="Copy start the example browser on Windows"
+                >
+                  Copy
+                </button>
+              </div>
+              <pre><code id="browser-start-windows">start chrome --remote-debugging-port=9222 --user-data-dir="%TEMP%\rea-notes-browser" https://rea.tools/examples/notes-web/</code></pre>
+            </div>
+            <div class="code-block">
+              <div class="code-header">
+                <span>Start the example browser · Linux</span
                 ><button
                   class="copy-button"
                   type="button"
                   data-copy="browser-start"
-                  aria-label="Copy start the example browser"
+                  aria-label="Copy start the example browser on Linux"
                 >
                   Copy
                 </button>
@@ -227,9 +280,8 @@
   https://rea.tools/examples/notes-web/</code></pre>
             </div>
             <p>
-              Use your installed browser's executable path on macOS or Windows.
-              You can replace the page URL with another page you want to
-              inspect.
+              A new Chrome window opens on the Notes example. You can replace
+              the page URL with another page you want to inspect.
             </p>
             <p>
               REA connects to this existing browser. You keep control of the
@@ -256,15 +308,16 @@
               <p class="terminal-prompt">
                 <span class="prompt-symbol" aria-hidden="true">›</span
                 ><span id="browser-prompt"
-                  >Use REA to inspect this page while I click Export notes. What
+                  >Use REA with the browser at http://127.0.0.1:9222 to inspect
+                  the Notes example page while I click Export notes. What
                   request does it make, and how is the CSV built?</span
                 ><span class="terminal-cursor" aria-hidden="true"></span>
               </p>
             </div>
             <p class="caption">
-              Example prompt. Give your agent the debugging endpoint,
-              <code>http://127.0.0.1:9222</code>, and the page URL. Let it start
-              the capture before you click.
+              Example prompt. <code>http://127.0.0.1:9222</code> is the
+              debugging address from the command above. Keep that Chrome window
+              open, and let your agent start the capture before you click.
             </p>
             <p>
               Your agent discovers the page target, starts an observation
@@ -290,6 +343,10 @@
               <pre><code id="browser-targets">npx -y rea-agents@latest list-browser-targets \
   http://127.0.0.1:9222 --json</code></pre>
             </div>
+            <p class="caption">
+              In Windows Command Prompt, put the command on one line and leave
+              out the <code>\</code> characters.
+            </p>
             <p>
               Choose the target with the Notes example URL. Replace
               <code>TARGET_ID</code> below with its ID, then run:

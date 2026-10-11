@@ -6,7 +6,7 @@
     <title>Reverse Engineering Guides — REA</title>
     <meta
       name="description"
-      content="Learn REA through short worked examples: a native calculation, an Electron CSV export and a browser request."
+      content="Learn REA through short worked examples: an Electron CSV export, a browser request and a native calculation."
     />
     <!-- website:sharing:start -->
     <!-- prettier-ignore -->
@@ -18,7 +18,7 @@
     <!-- prettier-ignore -->
     <meta property="og:title" content="Reverse Engineering Guides — REA" />
     <!-- prettier-ignore -->
-    <meta property="og:description" content="Learn REA through short worked examples: a native calculation, an Electron CSV export and a browser request." />
+    <meta property="og:description" content="Learn REA through short worked examples: an Electron CSV export, a browser request and a native calculation." />
     <!-- prettier-ignore -->
     <meta property="og:url" content="https://rea.tools/guides/" />
     <!-- prettier-ignore -->
@@ -39,7 +39,7 @@
     <!-- prettier-ignore -->
     <meta name="twitter:title" content="Reverse Engineering Guides — REA" />
     <!-- prettier-ignore -->
-    <meta name="twitter:description" content="Learn REA through short worked examples: a native calculation, an Electron CSV export and a browser request." />
+    <meta name="twitter:description" content="Learn REA through short worked examples: an Electron CSV export, a browser request and a native calculation." />
     <!-- prettier-ignore -->
     <meta name="twitter:image" content="https://rea.tools/assets/social-card.png" />
     <!-- prettier-ignore -->
@@ -138,8 +138,8 @@
         <p class="breadcrumb"><a href="../">Home</a> / Guides</p>
         <h1>REA guides.</h1>
         <p class="lede">
-          Analyze a native function, an Electron export or a browser request.
-          Each guide includes a prompt, code and results.
+          Follow an Electron export, observe a browser request or analyze a
+          native function. Each guide includes a prompt, code and results.
         </p>
       </div>
       <div class="guide-index">
@@ -166,23 +166,6 @@
           </div>
         </section>
         <section class="guide-entry">
-          <p class="eyebrow">Native binaries</p>
-          <div>
-            <h2>Recover a sound-pan calculation</h2>
-            <p>
-              Start with a Windows game executable. Inspect instructions, follow
-              a caller, read numeric constants and check the recovered C.
-            </p>
-            <div class="guide-route">
-              <span>Instructions</span> <b aria-hidden="true">→</b>
-              <span>Caller</span> <b aria-hidden="true">→</b>
-              <span>Constants</span> <b aria-hidden="true">→</b>
-              <span>C function</span>
-            </div>
-            <a class="text-link" href="native/">Native analysis guide</a>
-          </div>
-        </section>
-        <section class="guide-entry">
           <p class="eyebrow">JavaScript &amp; Electron</p>
           <div>
             <h2>Follow a CSV export</h2>
@@ -196,6 +179,9 @@
               <span>Preload API</span> <b aria-hidden="true">→</b>
               <span>IPC</span> <b aria-hidden="true">→</b> <span>CSV file</span>
             </div>
+            <p class="guide-needs">
+              <strong>Good first guide.</strong> Needs only REA setup.
+            </p>
             <a class="text-link" href="javascript/"
               >JavaScript &amp; Electron guide</a
             >
@@ -218,7 +204,29 @@
               <span>Captured request</span> <b aria-hidden="true">→</b>
               <span>Export script</span>
             </div>
+            <p class="guide-needs">Needs REA setup and Google Chrome.</p>
             <a class="text-link" href="browser/">Browser observation guide</a>
+          </div>
+        </section>
+        <section class="guide-entry">
+          <p class="eyebrow">Native binaries</p>
+          <div>
+            <h2>Recover a sound-pan calculation</h2>
+            <p>
+              Start with a Windows game executable. Inspect instructions, follow
+              a caller, read numeric constants and check the recovered C.
+            </p>
+            <div class="guide-route">
+              <span>Instructions</span> <b aria-hidden="true">→</b>
+              <span>Caller</span> <b aria-hidden="true">→</b>
+              <span>Constants</span> <b aria-hidden="true">→</b>
+              <span>C function</span>
+            </div>
+            <p class="guide-needs">
+              <strong>Advanced.</strong> Needs REA setup and Ghidra, Hopper or
+              IDA.
+            </p>
+            <a class="text-link" href="native/">Native analysis guide</a>
           </div>
         </section>
       </div>

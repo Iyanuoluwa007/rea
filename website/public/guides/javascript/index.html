@@ -157,6 +157,29 @@
           </ul>
         </nav>
         <article class="article" aria-label="JavaScript &amp; Electron">
+          <aside class="before-start" aria-labelledby="javascript-before">
+            <p class="before-start-title" id="javascript-before">
+              Before you start
+            </p>
+            <ul>
+              <li>
+                <strong>Good first guide.</strong> About 10 minutes, no coding
+                experience needed.
+              </li>
+              <li>
+                <strong>You need</strong> REA connected to an AI app. New to
+                this? <a href="../setup/">Set up REA step by step</a>.
+              </li>
+              <li>
+                <strong>You don't need</strong> Electron or the app running. REA
+                reads the app's files.
+              </li>
+            </ul>
+            <p class="caption">
+              An Electron app is a desktop app built with web technology, like
+              VS Code, Discord or Notion.
+            </p>
+          </aside>
           <section class="article-section" id="example">
             <h2>Where does “Export notes” go?</h2>
             <p>
@@ -236,8 +259,9 @@
               </p>
             </div>
             <p class="caption">
-              Example prompt. Include the absolute path to the application
-              folder or <code>app.asar</code>.
+              Example prompt. Add the full path to the application folder or
+              <code>app.asar</code> at the end;
+              <a href="../setup/#ask">here's how to copy a path</a>.
             </p>
             <p>
               REA reads the application files and builds a map of entrypoints,
@@ -371,6 +395,10 @@
               <pre><code id="javascript-command">npx -y rea-agents@latest analyze-javascript-application \
   /absolute/path/to/notes-example --json</code></pre>
             </div>
+            <p class="caption">
+              In Windows Command Prompt, put the command on one line and leave
+              out the <code>\</code> characters.
+            </p>
             <p>
               Replace the path with the folder you unzipped. You should find one
               IPC channel and one matching handler in

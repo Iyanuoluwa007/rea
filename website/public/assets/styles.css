@@ -1443,6 +1443,32 @@ pre code {
   border-radius: 3px;
   color: #414b55;
 }
+.guide-entry .guide-needs {
+  margin-bottom: 0.9rem;
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+.before-start {
+  margin-bottom: 2.5rem;
+  padding: 1.2rem 1.4rem;
+  border: 1px solid #ced9e5;
+  border-left: 3px solid var(--accent);
+  border-radius: 5px;
+  background: #fafbfc;
+}
+.before-start-title {
+  margin-bottom: 0.6rem;
+  font-weight: 650;
+}
+.before-start ul {
+  margin: 0;
+}
+.before-start li + li {
+  margin-top: 0.45rem;
+}
+.before-start .caption {
+  margin: 0.8rem 0 0;
+}
 .example-files {
   display: flex;
   flex-wrap: wrap;
