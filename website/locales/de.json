@@ -1,0 +1,34 @@
+{
+  "strings": {
+    "skipLink": "Skip to content",
+    "home": "REA home",
+    "mainNavigation": "Main navigation",
+    "navShowcases": "Showcases",
+    "navBlog": "Blog",
+    "navGetStarted": "Get started",
+    "navGuides": "Guides",
+    "navFaq": "FAQ",
+    "language": "Language",
+    "github": "REA on GitHub",
+    "discord": "Join REA on Discord",
+    "followRea": "Follow REA on X",
+    "source": "Source",
+    "license": "MIT license",
+    "community": "Join the community",
+    "followUs": "Follow us on X",
+    "copied": "Copied",
+    "selected": "Selected",
+    "statusCopied": "Code copied to clipboard.",
+    "statusSelected": "Code selected. Use your keyboard to copy it.",
+    "backToTop": "Back to top",
+    "top": "Top",
+    "imageAlt": "REA — Find out how software works. Reverse engineering with your coding agent.",
+    "staleNotice": "The English page has changed since this translation. {link}",
+    "staleNoticeLink": "Read the English version."
+  },
+  "githubStars": {
+    "one": "REA on GitHub ({count} star)",
+    "other": "REA on GitHub ({count} stars)"
+  },
+  "sameAsEnglish": []
+}

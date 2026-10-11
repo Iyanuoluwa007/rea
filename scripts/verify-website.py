@@ -1,6 +1,8 @@
 """Check website references, search metadata and the sole production publisher."""
 
+from collections import Counter
 from html.parser import HTMLParser
+import os
 from pathlib import Path
 import re
 import struct
@@ -10,7 +12,21 @@ from urllib.parse import unquote, urlsplit
 import xml.etree.ElementTree as ET
 from zipfile import BadZipFile, ZipFile
 
-from website import NOTES_FIXTURES, SITE_ORIGIN, authored_markdown, page_url, sync_pages
+from website import (
+    LANGUAGES,
+    NOTES_FIXTURES,
+    SITE_ORIGIN,
+    SiteState,
+    authored_markdown,
+    code_block,
+    copy_targets,
+    page_language,
+    page_url,
+    source_digest,
+    sync_pages,
+    synced_code_ids,
+    translation_record,
+)
 
 LEGACY_ORIGIN = "morluto.github.io"
 SITE_TEXT_URL = re.compile(
@@ -167,8 +183,9 @@ def check_search_metadata(site, pages):
         title = page.titles[0].strip() if len(page.titles) == 1 else ""
         if not title:
             errors.append(f"{label}: needs exactly one nonempty head title")
-        if page.lang != "en" or page.h1_count != 1:
-            errors.append(f"{label}: needs lang=en and exactly one h1")
+        tag = LANGUAGES[page_language(site, path)[0]].tag
+        if page.lang != tag or page.h1_count != 1:
+            errors.append(f"{label}: needs lang={tag} and exactly one h1")
         if label in NOTES_FIXTURES and not page.noindex():
             errors.append(
                 f"{label}: example application must have a head noindex directive"
@@ -280,15 +297,21 @@ def check_search_metadata(site, pages):
     return len(indexable), errors
 
 
-def check_site(site):
-    """Check assets, HTML fragment destinations and SVG syntax."""
+def parse_pages(site):
+    """Parse every HTML page once for reference, metadata and translation checks."""
     pages = {}
-    errors = []
-    references = 0
     for path in sorted(site.rglob("*.html")):
         parser = HtmlReferences()
         parser.feed(path.read_text(encoding="utf-8"))
         pages[path] = parser
+    return pages
+
+
+def check_site(site):
+    """Check assets, HTML fragment destinations and SVG syntax."""
+    pages = parse_pages(site)
+    errors = []
+    references = 0
     if site / "index.html" not in pages:
         errors.append("website/public/index.html is missing")
 
@@ -344,6 +367,190 @@ def check_site(site):
     indexable, metadata_errors = check_search_metadata(site, pages)
     errors.extend(metadata_errors)
     return len(pages), references, indexable, errors
+
+
+# Han, kana and CJK punctuation; a space between two of them renders as a gap.
+CJK_GAP = re.compile(
+    r"([、-〿぀-ヿ㐀-䶿一-鿿豈-﫿！-￯])"
+    r"\s+([、-〿぀-ヿ㐀-䶿一-鿿豈-﫿！-￯])"
+)
+CODE_TAGS = {"code", "kbd", "pre", "script", "style"}
+
+
+class TranslationText(HTMLParser):
+    """Collect prose, inline code and message attributes for comparing translations."""
+
+    def __init__(self, synced):
+        super().__init__()
+        self.synced = set(synced)
+        self.stack = []
+        self.prose = []
+        self.inline_code = Counter()
+        self.messages = Counter()
+
+    def handle_starttag(self, tag, attrs):
+        attributes = dict(attrs)
+        self.messages.update(name for name in attributes if name.startswith("data-msg-"))
+        if tag in CODE_TAGS:
+            self.stack.append([tag, attributes.get("id"), ""])
+
+    def handle_startendtag(self, tag, attrs):
+        attributes = dict(attrs)
+        self.messages.update(name for name in attributes if name.startswith("data-msg-"))
+
+    def handle_endtag(self, tag):
+        if self.stack and self.stack[-1][0] == tag:
+            name, identifier, text = self.stack.pop()
+            if name in ("code", "kbd") and identifier not in self.synced:
+                self.inline_code[" ".join(text.split())] += 1
+            if self.stack:
+                self.stack[-1][2] += text
+
+    def handle_data(self, data):
+        if self.stack:
+            self.stack[-1][2] += data
+        else:
+            self.prose.append(data)
+
+
+def translation_warning(path, root, message):
+    """Return a warning tied to a repository file."""
+    return (path.relative_to(root).as_posix(), message)
+
+
+def check_translations(root, pages):
+    """Check translation records, copied code, structure parity and CJK spacing.
+
+    A changed English source is a warning: its translation keeps working, shows a
+    notice after sync and is updated later. Errors cover what sync or the
+    translator controls directly.
+    """
+    site = root / "website/public"
+    errors = []
+    warnings = []
+    try:
+        state = SiteState(root)
+    except ValueError as error:
+        return [str(error)], []
+    for path, page in pages.items():
+        language, english = page_language(site, path)
+        if language == "en":
+            continue
+        label = path.relative_to(site).as_posix()
+        source = path.read_text(encoding="utf-8")
+        record = translation_record(source)
+        english_path = site / english
+        if not english_path.is_file():
+            errors.append(f"{label}: translates {english}, which does not exist")
+            continue
+        english_source = english_path.read_text(encoding="utf-8")
+        if record is None:
+            errors.append(f"{label}: needs one <!-- website:translation source-sha256=... status=... --> record")
+            continue
+        status = record.get("status")
+        if status not in ("draft", "reviewed"):
+            errors.append(f"{label}: translation status must be draft or reviewed")
+        if status == "draft" and not page.noindex():
+            errors.append(f"{label}: a draft translation needs <meta name=\"robots\" content=\"noindex\" />")
+        if status == "reviewed":
+            if page.noindex():
+                errors.append(f"{label}: remove noindex from a reviewed translation")
+            if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", record.get("reviewed", "")):
+                errors.append(f"{label}: a reviewed translation needs reviewed=\"YYYY-MM-DD\"")
+        fresh = record.get("source-sha256") == source_digest(english_source)
+        if not fresh:
+            warnings.append(translation_warning(
+                path, root,
+                f"The English page {english} has changed since this translation. Update the translation, "
+                "then set source-sha256 to the new value from python3 scripts/website.py translations.",
+            ))
+
+        synced = synced_code_ids(english_source)
+        for identifier in synced:
+            expected = code_block(identifier).search(english_source).group(2)
+            found = code_block(identifier).findall(source)
+            if len(found) != 1 or found[0][1] != expected:
+                errors.append(f"{label}: code block {identifier} must match the English page; run sync")
+
+        english_page = pages[english_path]
+        differences = []
+        if page.ids != english_page.ids:
+            differences.append(
+                f"element IDs differ (missing {sorted(english_page.ids - page.ids)}, extra {sorted(page.ids - english_page.ids)})"
+            )
+        if copy_targets(source) != copy_targets(english_source):
+            differences.append("copy buttons differ from the English page")
+        translated = TranslationText(synced)
+        translated.feed(source)
+        original = TranslationText(synced)
+        original.feed(english_source)
+        if translated.messages != original.messages:
+            differences.append("data-msg-* message attributes differ from the English page")
+        for difference in differences:
+            if fresh:
+                errors.append(f"{label}: {difference}")
+            else:
+                warnings.append(translation_warning(path, root, difference))
+        if fresh and translated.inline_code != original.inline_code:
+            changed = sorted((translated.inline_code - original.inline_code) + (original.inline_code - translated.inline_code))
+            warnings.append(translation_warning(
+                path, root, f"inline code differs from the English page: {', '.join(repr(text) for text in changed[:5])}",
+            ))
+
+        if language in ("ja", "zh-hans", "zh-hant"):
+            for text in translated.prose:
+                for match in CJK_GAP.finditer(text):
+                    errors.append(
+                        f"{label}: whitespace between {match.group(1)!r} and {match.group(2)!r} renders as a gap; "
+                        "keep CJK text on one line without spaces"
+                    )
+
+        for reference in page.references:
+            url = urlsplit(reference)
+            if url.scheme or url.netloc or not url.path or reference.startswith("/"):
+                continue
+            target = (path.parent / unquote(url.path)).resolve()
+            if target.is_dir():
+                target /= "index.html"
+            if not target.is_relative_to(site.resolve()):
+                continue
+            target_language, target_english = page_language(site.resolve(), target)
+            if (
+                target_language == "en"
+                and target_english != english
+                and state.translations.get((language, target_english)) == "reviewed"
+            ):
+                warnings.append(translation_warning(
+                    path, root, f"links to the English {target_english}; link to its reviewed translation instead",
+                ))
+
+    english_strings = state.locales["en"]["strings"]
+    for code in LANGUAGES:
+        if code == "en" or not any(key[0] == code for key in state.translations):
+            continue
+        locale = state.locales[code]
+        same = sorted(
+            key for key, value in locale["strings"].items()
+            if value == english_strings[key] and key not in locale.get("sameAsEnglish", [])
+        )
+        if same:
+            warnings.append((f"website/locales/{code}.json", f"UI strings still in English: {', '.join(same)}"))
+    return errors, warnings
+
+
+def report_warnings(warnings):
+    """Print warnings, as GitHub annotations and a job summary when running in Actions."""
+    for file, message in warnings:
+        print(f"Warning: {file}: {message}")
+    if os.environ.get("GITHUB_ACTIONS") != "true" or not warnings:
+        return
+    for file, message in warnings:
+        print(f"::warning file={file}::{message}")
+    summary = os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary:
+        with open(summary, "a", encoding="utf-8") as output:
+            output.write("### Website warnings\n\n")
+            output.writelines(f"- `{file}`: {message}\n" for file, message in warnings)
 
 
 def check_publisher(root):
@@ -404,10 +611,16 @@ def main():
     errors.extend(check_example_archive(root / "website/public"))
     errors.extend(check_publisher(root))
     errors.extend(check_repository_links(root))
+    translation_errors, warnings = check_translations(root, parse_pages(root / "website/public"))
+    errors.extend(translation_errors)
     try:
-        sync_pages(root, check=True)
+        for path in sync_pages(root, check=True):
+            warnings.append(translation_warning(
+                path, root, "the out-of-date notice needs refreshing; run python3 scripts/website.py sync",
+            ))
     except (OSError, ValueError, KeyError) as error:
         errors.append(str(error))
+    report_warnings(warnings)
     if errors:
         print("Website checks failed:\n" + "\n".join(errors), file=sys.stderr)
         return 1

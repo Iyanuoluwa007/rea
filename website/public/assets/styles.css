@@ -6,9 +6,11 @@
   --soft: #f4f6f8;
   --accent: #294f82;
   --page: #ffffff;
-  --font-sans:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  /* Translated pages extend these stacks with fonts for their script. */
+  --font-latin: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial;
+  --font-code: "SFMono-Regular", Consolas, "Liberation Mono";
+  --font-sans: var(--font-latin), sans-serif;
+  --font-mono: var(--font-code), monospace;
   font-family: var(--font-sans);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -2485,5 +2487,178 @@ pre code {
   .stats,
   .case-stats {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Translated pages. Latin text keeps the site's fonts, then each language
+   names its own CJK fonts so Han characters take that language's forms. */
+:lang(en) {
+  --font-sans: var(--font-latin), sans-serif;
+  --font-mono: var(--font-code), monospace;
+}
+:lang(ja) {
+  --font-sans:
+    var(--font-latin), "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Yu Gothic UI", Meiryo, "Noto Sans JP", "Noto Sans CJK JP", sans-serif;
+  --font-mono:
+    var(--font-code), "Hiragino Sans", "Yu Gothic UI", "Noto Sans JP",
+    "Noto Sans CJK JP", monospace;
+}
+:lang(zh-Hans) {
+  --font-sans:
+    var(--font-latin), "PingFang SC", "Microsoft YaHei", "Noto Sans SC",
+    "Noto Sans CJK SC", sans-serif;
+  --font-mono:
+    var(--font-code), "PingFang SC", "Microsoft YaHei", "Noto Sans SC",
+    "Noto Sans CJK SC", monospace;
+}
+:lang(zh-Hant) {
+  --font-sans:
+    var(--font-latin), "PingFang TC", "Microsoft JhengHei", "Noto Sans TC",
+    "Noto Sans CJK TC", sans-serif;
+  --font-mono:
+    var(--font-code), "PingFang TC", "Microsoft JhengHei", "Noto Sans TC",
+    "Noto Sans CJK TC", monospace;
+}
+:lang(ko) {
+  --font-sans:
+    var(--font-latin), "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR",
+    "Noto Sans CJK KR", sans-serif;
+  --font-mono:
+    var(--font-code), "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR",
+    "Noto Sans CJK KR", monospace;
+}
+/* Resolve the stack again wherever the language changes, such as the
+   language menu's names or an English badge. */
+[lang] {
+  font-family: var(--font-sans);
+}
+:is(:lang(ja), :lang(ko), :lang(zh-Hans), :lang(zh-Hant))
+  :is(
+    h1,
+    h2,
+    h3,
+    .brand-name,
+    .home-no,
+    .agent-one-prompt,
+    .stats dt,
+    .home-start-grid .home-setup h2
+  ) {
+  letter-spacing: 0;
+}
+:is(:lang(ja), :lang(ko), :lang(zh-Hans), :lang(zh-Hant)) :is(h1, h2, h3) {
+  line-height: 1.3;
+  text-wrap: pretty;
+}
+/* CJK fonts have no italics, so emphasis uses weight instead. */
+:is(:lang(ja), :lang(ko), :lang(zh-Hans), :lang(zh-Hant)) em {
+  font-style: normal;
+  font-weight: 600;
+}
+:lang(ja) {
+  line-break: strict;
+}
+:lang(ja) :is(h1, h2, h3) {
+  word-break: auto-phrase;
+}
+:lang(ko) {
+  word-break: keep-all;
+}
+:lang(de) :is(h1, h2, h3, .lede, .contents a, .button) {
+  hyphens: auto;
+  overflow-wrap: break-word;
+}
+
+.language-menu {
+  position: relative;
+}
+.language-menu summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding-inline: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 0.875rem;
+  cursor: pointer;
+  list-style: none;
+}
+.language-menu summary::-webkit-details-marker {
+  display: none;
+}
+.language-menu summary:hover,
+.language-menu[open] summary {
+  background: var(--soft);
+  color: var(--ink);
+}
+.language-menu svg {
+  display: block;
+  flex-shrink: 0;
+}
+.language-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 6;
+  min-width: 10rem;
+  margin: 0;
+  padding: 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--page);
+  box-shadow: 0 8px 24px rgb(32 37 43 / 12%);
+  list-style: none;
+}
+.language-list li + li {
+  margin-top: 0;
+}
+.language-list a {
+  display: block;
+  padding: 0.45rem 0.7rem;
+  border-radius: 6px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.language-list a:hover {
+  background: var(--soft);
+}
+.language-list a[aria-current="true"] {
+  font-weight: 600;
+}
+.nav-badge {
+  margin-left: 0.3em;
+  padding: 0 0.3em;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  vertical-align: 0.15em;
+}
+.translation-notice {
+  margin: 1.5rem 0 0;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--accent);
+  background: var(--soft);
+  font-size: 0.9rem;
+}
+main:not(.container) > .translation-notice {
+  width: min(1080px, calc(100% - 3.5rem));
+  margin-inline: auto;
+}
+@media (max-width: 640px) {
+  .language-current {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  main:not(.container) > .translation-notice {
+    width: calc(100% - 2.5rem);
   }
 }

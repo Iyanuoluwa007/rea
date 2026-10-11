@@ -1,21 +1,19 @@
 <!-- prettier-ignore -->
-<a class="skip-link" href="#main">Skip to content</a>
+<a class="skip-link" href="#main">$t_skipLink</a>
 <!-- prettier-ignore -->
 <header class="site-header">
   <div class="container header-inner">
-    <a class="brand" href="$base" aria-label="REA home"
+    <a class="brand" href="$brand" aria-label="$t_home"
       ><span class="brand-name">REA</span
       ><span class="brand-caption">Reverse Engineer Anything</span></a
     >
-    <nav class="navigation" aria-label="Main navigation">$navigation</nav>
-    <div class="header-social">
+    <nav class="navigation" aria-label="$t_mainNavigation">$navigation</nav>
+    <div class="header-social">$language_menu
       <a
         class="nav-github"
         href="https://github.com/morluto/rea"
-        aria-label="REA on GitHub"
-        title="REA on GitHub"
-        data-label-one="REA on GitHub ({count} star)"
-        data-label-other="REA on GitHub ({count} stars)"
+        aria-label="$t_github"
+        title="$t_github"$github_star_labels
       >
         <svg
           width="22"
@@ -34,8 +32,8 @@
       <a
         class="nav-discord"
         href="https://discord.gg/GkcryMnJDM"
-        aria-label="Join REA on Discord"
-        title="Join REA on Discord"
+        aria-label="$t_discord"
+        title="$t_discord"
       >
         <svg
           width="22"
@@ -53,8 +51,8 @@
       <a
         class="nav-x"
         href="https://x.com/reatools"
-        aria-label="Follow REA on X"
-        title="Follow REA on X"
+        aria-label="$t_followRea"
+        title="$t_followRea"
       >
         <svg
           width="18"

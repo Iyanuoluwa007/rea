@@ -4,7 +4,9 @@
 >
 > — N0zoM1z0
 
-An English static website with explanatory figures, worked guides and Aegis, DX-Ball, Notion, TH04 and CTF investigations.
+A static website with explanatory figures, worked guides and Aegis, DX-Ball, Notion, TH04 and CTF investigations.
+It is written in English; the home page, Get started, the Guides index and the FAQ are
+also translated, as described in [translation.md](translation.md).
 The public files are in `website/public/`. The site uses HTML, CSS and small
 scripts for copying code, following code comparisons and playing the dinosaur
 speed reconstruction. The scripts contain no reader-facing text: copy messages
@@ -49,8 +51,10 @@ applies to every page.
 | ------------------------------ | ---------------------------------------------------------------- | ----------------------------------------------- |
 | Page text, examples or figures | The page's HTML outside the marked shared regions                | `python3 scripts/website.py check`              |
 | Search title or description    | The page's `<title>` and first description meta tag              | `python3 scripts/website.py sync`, then `check` |
-| Main navigation                | `NAVIGATION` in `scripts/website.py`                             | `sync`, then `check`                            |
+| Main navigation                | `NAVIGATION` in `scripts/website.py` and labels in `locales/`    | `sync`, then `check`                            |
 | Header, social links or footer | `templates/header.html.tmpl` or `templates/footer.html.tmpl`     | `sync`, then `check`                            |
+| Shared UI text in a language   | `locales/<language>.json`                                        | `sync`, then `check`                            |
+| A translated page              | See [translation.md](translation.md)                             | `translate`, then `check`                       |
 | Shared link previews           | `templates/sharing.html.tmpl` or `public/assets/social-card.svg` | `sync`, then `check`                            |
 
 Create a reading page with:
@@ -465,7 +469,9 @@ See Cloudflare's [GitHub Actions authentication instructions](https://developers
 The default `both` target checks that both secrets are present before preparing
 a release. Cloudflare deploys first; GitHub Pages deploys after that step succeeds.
 
-Preparation adds `deployment.json` with the workflow's commit SHA. Cloudflare
+After the checks pass, preparation runs `sync` so a translation whose English
+page changed is published with its out-of-date notice, then adds
+`deployment.json` with the workflow's commit SHA. Cloudflare
 receives the extracted Pages artifact through Wrangler's explicit assets path;
 the production environment disables Wrangler's preview custom build, so deployment
 uses the prepared artifact directly. The workflow then

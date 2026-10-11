@@ -9,10 +9,14 @@ website content, layout or figures. Use [figures.md](figures.md) and `evidence/`
 for asset notes and the source of case-study claims.
 
 - Write English, direct headings and concrete instructions. Each paragraph
-  should explain a new fact or action.
+  should explain a new fact or action. Translated pages follow
+  [translation.md](translation.md): create them with `translate`, keep their
+  structure and copied code blocks in step with English, and refresh a
+  translation's source hash only after updating its text.
 - Reuse the shared styles, prompts, figures and code-step components. Keep a
   case study focused on one question, with further examples in native details.
-- Edit shared header, footer and sharing markup in `templates/`; run
+- Edit shared header, footer and sharing markup in `templates/` and their text
+  in `locales/`; run
   `python3 scripts/website.py sync` and commit the rendered regions with their
   templates. Keep page bodies outside the marked regions. Author each title and
   description once; derive sharing fields and canonicals from them. Use

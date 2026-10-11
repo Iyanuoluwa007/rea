@@ -3,6 +3,7 @@
 import contextlib
 import importlib.util
 import io
+import re
 from pathlib import Path
 import shutil
 import tempfile
@@ -137,7 +138,7 @@ class WebsiteMaintenanceChecks(unittest.TestCase):
     def test_shared_edits_preserve_body_and_catch_drift_before_rewriting(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            for name in ("public", "templates"):
+            for name in ("public", "templates", "locales"):
                 shutil.copytree(ROOT / "website" / name, root / "website" / name)
             page = root / "website/public/blog/touhou-reconstruction/index.html"
             original = page.read_text()
@@ -159,7 +160,7 @@ class WebsiteMaintenanceChecks(unittest.TestCase):
     def test_new_page_escapes_metadata_stays_a_draft_and_joins_sitemap_when_ready(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            for name in ("public", "templates"):
+            for name in ("public", "templates", "locales"):
                 shutil.copytree(ROOT / "website" / name, root / "website" / name)
             site = root / "website/public"
             page = WEBSITE.new_page(root, "blog/new-example", 'A <test> & "result"', 'Check "quotes" & <markup>.')
@@ -240,6 +241,194 @@ class WebsiteMaintenanceChecks(unittest.TestCase):
                     finally:
                         server.shutdown()
                         worker.join()
+
+
+
+def site_copy(directory):
+    """Copy the authored website inputs into a temporary repository root."""
+    root = Path(directory)
+    for name in ("public", "templates", "locales"):
+        shutil.copytree(ROOT / "website" / name, root / "website" / name)
+    return root
+
+
+def quietly(function, *arguments):
+    """Run a command helper without its progress output."""
+    with contextlib.redirect_stdout(io.StringIO()):
+        return function(*arguments)
+
+
+def mark_reviewed(path):
+    """Apply the reviewer's change: reviewed status and date, without noindex.
+
+    A reviewed translation has its own search title, so give the test page one.
+    """
+    source = re.sub(r"<title>(.*?)</title>", r"<title>\1 (zh-Hant)</title>", path.read_text(), count=1)
+    source = source.replace('status="draft"', 'status="reviewed" reviewed="2026-10-11"', 1)
+    path.write_text(source.replace('    <meta name="robots" content="noindex" />\n', "", 1))
+
+
+def translation_errors(root):
+    """Return the verifier's translation errors and warnings for a site copy."""
+    return VERIFY.check_translations(root, VERIFY.parse_pages(root / "website/public"))
+
+
+class WebsiteTranslationChecks(unittest.TestCase):
+    """Create translations through the contributor command and check what readers get."""
+
+    def test_translate_creates_an_unlinked_noindex_draft(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = site_copy(directory)
+            site = root / "website/public"
+            english = (site / "get-started/index.html").read_text()
+            page = quietly(WEBSITE.new_translation, root, "zh-hant", "get-started")
+            source = page.read_text()
+            self.assertEqual(page, site / "zh-hant/get-started/index.html")
+            self.assertIn('<html lang="zh-Hant">', source)
+            self.assertIn('<meta name="robots" content="noindex" />', source)
+            self.assertEqual(
+                WEBSITE.translation_record(source),
+                {"source-sha256": WEBSITE.source_digest(english), "status": "draft"},
+            )
+            self.assertIn('href="../../assets/styles.css"', source)
+            self.assertIn('<a href="../../faq/">', source)
+            self.assertIn('href="../../guides/javascript/"', source)
+            self.assertIn('<a class="brand" href="../../"', source)
+            self.assertIn(
+                '<a href="../../zh-hant/get-started/" class="nav-start" aria-current="page">Get started</a>', source
+            )
+            self.assertIn(
+                '<a href="../../showcase/" hreflang="en">Showcases<span class="nav-badge" lang="en">EN</span></a>',
+                source,
+            )
+            self.assertIn('<li><a href="../../get-started/" hreflang="en" lang="en">English</a></li>', source)
+            self.assertIn('<meta property="og:locale" content="zh_TW" />', source)
+            self.assertNotIn('rel="alternate"', source)
+            self.assertIn(WEBSITE.NOTICE_START + WEBSITE.NOTICE_END, source)
+            self.assertEqual(english, (site / "get-started/index.html").read_text())
+            errors, warnings = translation_errors(root)
+            self.assertEqual(errors, [])
+            self.assertEqual([file for file, _ in warnings], ["website/locales/zh-hant.json"])
+            self.assertEqual(VERIFY.check_site(site)[3], [])
+            with contextlib.redirect_stdout(io.StringIO()):
+                PREPARE.prepare_sitemap(site)
+            self.assertNotIn("zh-hant", (site / "sitemap.xml").read_text())
+            for language, route, message in (
+                ("zh-hant", "get-started", "already exists"),
+                ("en", "faq", "Choose one of"),
+                ("ja", "missing", "No English page"),
+                ("ja", "zh-hant/get-started", "without a language directory"),
+                ("ja", "../outside", "directory route"),
+            ):
+                with self.subTest(language=language, route=route):
+                    with self.assertRaisesRegex(ValueError, message):
+                        quietly(WEBSITE.new_translation, root, language, route)
+
+    def test_reviewed_translations_join_menus_hreflang_and_the_sitemap(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = site_copy(directory)
+            site = root / "website/public"
+            mark_reviewed(quietly(WEBSITE.new_translation, root, "zh-hant", "get-started"))
+            quietly(WEBSITE.sync_pages, root)
+            english = (site / "get-started/index.html").read_text()
+            for tag, url in (
+                ("en", "https://rea.tools/get-started/"),
+                ("zh-Hant", "https://rea.tools/zh-hant/get-started/"),
+                ("x-default", "https://rea.tools/get-started/"),
+            ):
+                self.assertIn(f'<link rel="alternate" hreflang="{tag}" href="{url}" />', english)
+            self.assertIn('<meta property="og:locale:alternate" content="zh_TW" />', english)
+            self.assertIn(
+                '<li><a href="../zh-hant/get-started/" hreflang="zh-Hant" lang="zh-Hant">繁體中文</a></li>', english
+            )
+            self.assertNotIn("language-menu", (site / "faq/index.html").read_text())
+            translated = (site / "zh-hant/get-started/index.html").read_text()
+            self.assertIn('<meta property="og:locale:alternate" content="en_US" />', translated)
+
+            # A reviewed home page becomes the menu's fallback for untranslated pages.
+            mark_reviewed(quietly(WEBSITE.new_translation, root, "zh-hant", "/"))
+            quietly(WEBSITE.sync_pages, root)
+            self.assertIn(
+                '<li><a href="../zh-hant/" hreflang="zh-Hant" lang="zh-Hant">繁體中文</a></li>',
+                (site / "faq/index.html").read_text(),
+            )
+            translated = (site / "zh-hant/get-started/index.html").read_text()
+            self.assertIn('<a class="brand" href="../../zh-hant/"', translated)
+            home = (site / "zh-hant/index.html").read_text()
+            self.assertIn('href="get-started/"', home)
+            self.assertIn('href="../showcase/"', home)
+            self.assertIn('href="../assets/styles.css"', home)
+            with contextlib.redirect_stdout(io.StringIO()):
+                PREPARE.prepare_sitemap(site)
+            sitemap = (site / "sitemap.xml").read_text()
+            self.assertIn("https://rea.tools/zh-hant/get-started/", sitemap)
+            self.assertIn("https://rea.tools/zh-hant/", sitemap)
+            self.assertEqual(VERIFY.check_site(site)[3], [])
+            self.assertEqual(translation_errors(root)[0], [])
+
+    def test_english_commands_sync_and_text_changes_show_a_notice(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = site_copy(directory)
+            site = root / "website/public"
+            english_path = site / "get-started/index.html"
+            page = quietly(WEBSITE.new_translation, root, "zh-hant", "get-started")
+            english = english_path.read_text()
+
+            command = "npm install --global rea-agents</code>"
+            english_path.write_text(english.replace(command, "npm install --global rea-agents@latest</code>", 1))
+            with self.assertRaisesRegex(ValueError, "Shared HTML is stale: zh-hant/get-started/index.html"):
+                quietly(WEBSITE.sync_pages, root, True)
+            quietly(WEBSITE.sync_pages, root)
+            self.assertIn("rea-agents@latest</code>", page.read_text())
+            self.assertNotIn("translation-notice\"", page.read_text())
+            self.assertEqual(translation_errors(root)[0], [])
+
+            text = "<p>Restart your client when setup finishes.</p>"
+            changed = english_path.read_text().replace(text, "<p>Restart your client after setup.</p>", 1)
+            english_path.write_text(changed)
+            self.assertEqual(quietly(WEBSITE.sync_pages, root, True), [page])
+            errors, warnings = translation_errors(root)
+            self.assertEqual(errors, [])
+            self.assertTrue(any("has changed since this translation" in message for _, message in warnings))
+            quietly(WEBSITE.sync_pages, root)
+            self.assertIn(
+                '<p class="translation-notice" role="note">The English page has changed since this translation. '
+                '<a href="../../get-started/" hreflang="en">Read the English version.</a></p>',
+                page.read_text(),
+            )
+            report = quietly(WEBSITE.translation_report, root)
+            self.assertIn(f'  after updating the translation, record source-sha256="{WEBSITE.source_digest(changed)}"', report)
+
+            english_path.write_text(changed.replace("<p>Restart your client after setup.</p>", text, 1))
+            quietly(WEBSITE.sync_pages, root)
+            self.assertNotIn('class="translation-notice"', page.read_text())
+
+            page.write_text(page.read_text().replace("rea-agents@latest</code>", "rea-agents@1</code>", 1))
+            self.assertTrue(any("install-cli must match" in error for error in translation_errors(root)[0]))
+
+    def test_translations_keep_structure_and_cjk_spacing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = site_copy(directory)
+            page = quietly(WEBSITE.new_translation, root, "zh-hant", "get-started")
+            original = page.read_text()
+            cases = (
+                ("<p>Restart your client when setup finishes.</p>", "<p>完成後\n              重新啟動。</p>", "renders as a gap"),
+                ('id="install-node"', 'id="node"', "element IDs differ"),
+                ('data-copy="install-cli"', 'data-copy="node-check"', "copy buttons differ"),
+                ('    <meta name="robots" content="noindex" />\n', "", "draft translation needs"),
+                ('status="draft"', 'status="final"', "status must be draft or reviewed"),
+            )
+            for old, new, message in cases:
+                with self.subTest(message=message):
+                    self.assertIn(old, original)
+                    page.write_text(original.replace(old, new, 1))
+                    self.assertTrue(any(message in error for error in translation_errors(root)[0]))
+            page.write_text(original.replace("<p>Restart your client when setup finishes.</p>", "<p>重新啟動 REA 用戶端。</p>", 1))
+            self.assertEqual(translation_errors(root)[0], [])
+            page.write_text(original.replace("<code>node -v</code>", "<code>node -V</code>", 1))
+            errors, warnings = translation_errors(root)
+            self.assertEqual(errors, [])
+            self.assertTrue(any("inline code differs" in message for _, message in warnings))
 
 
 if __name__ == "__main__":
