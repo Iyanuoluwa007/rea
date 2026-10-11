@@ -6,8 +6,10 @@
   --soft: #f4f6f8;
   --accent: #294f82;
   --page: #ffffff;
-  font-family:
+  --font-sans:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-sans);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -44,7 +46,7 @@ button {
 }
 code,
 pre {
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
 }
 code {
   font-size: 0.9em;
@@ -57,7 +59,7 @@ kbd {
   border-radius: 3px;
   background: var(--soft);
   color: var(--ink);
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
   font-size: 0.85em;
   white-space: nowrap;
 }
@@ -932,7 +934,7 @@ pre code {
   font-variant-numeric: tabular-nums;
 }
 .aegis-calculation .aegis-code {
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-family: ui-monospace, var(--font-mono);
   font-size: 1.5rem;
   letter-spacing: 0.06em;
 }
@@ -1264,7 +1266,7 @@ pre code {
   margin: 0;
   padding: 1.4rem;
   color: #f1f4f8;
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
   font-size: 0.9rem;
   line-height: 1.9;
 }
@@ -1878,7 +1880,7 @@ pre code {
   gap: 0.5rem;
 }
 .expert-facts dt {
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
 }
 .expert-facts dd {
   margin: 0;
@@ -2137,7 +2139,7 @@ pre code {
   font-size: 0.875rem;
 }
 .dino-speed-label output {
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   color: var(--accent);
 }

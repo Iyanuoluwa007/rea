@@ -56,8 +56,9 @@
     <script type="module" src="assets/dino-demo.js"></script>
   </head>
   <body class="home-page" id="top">
-    <a class="skip-link" href="#main">Skip to content</a>
     <!-- website:header:start -->
+    <!-- prettier-ignore -->
+    <a class="skip-link" href="#main">Skip to content</a>
     <!-- prettier-ignore -->
     <header class="site-header">
       <div class="container header-inner">
@@ -78,6 +79,8 @@
             href="https://github.com/morluto/rea"
             aria-label="REA on GitHub"
             title="REA on GitHub"
+            data-label-one="REA on GitHub ({count} star)"
+            data-label-other="REA on GitHub ({count} stars)"
           >
             <svg
               width="22"
@@ -512,7 +515,24 @@
             </div>
           </dl>
           <div class="home-example-grid dino-example-grid">
-            <figure class="dino-demo" data-dino-demo>
+            <figure
+              class="dino-demo"
+              data-dino-demo
+              data-msg-play="Play"
+              data-msg-pause="Pause"
+              data-msg-play-again="Play again"
+              data-msg-ready="Press Play, then jump over the cactus."
+              data-msg-running="Running. Space or Jump clears a cactus."
+              data-msg-paused="Paused. Press Play to continue."
+              data-msg-crashed="Hit a cactus. Press Play again, or change the speed and restart."
+              data-msg-fixed="Fixed speed: {speed}."
+              data-msg-fixed-running="Fixed speed: {speed}. Space or Jump clears a cactus."
+              data-msg-fixed-stopped="Fixed speed: {speed}. Press Play to try it."
+              data-msg-rule="Recovered rule: start at 6, then increase toward 13."
+              data-msg-distance="DISTANCE {distance}"
+              data-msg-canvas-ready="Space or Jump ↑"
+              data-msg-canvas-crashed="Hit a cactus. Try another speed."
+            >
               <p class="figure-title">Play the reconstruction</p>
               <div class="dino-stage">
                 <svg
@@ -746,7 +766,14 @@ SPEED: 6</code></pre>
             </div>
           </dl>
           <div class="home-example-grid">
-            <figure class="percent-figure" data-percent-demo>
+            <figure
+              class="percent-figure"
+              data-percent-demo
+              data-msg-input="Press % to see what happens to 10."
+              data-msg-percent-add="10% of 200 is 20. Press = to add it."
+              data-msg-percent-multiply="For multiplication, 10 becomes 0.1. Press = to multiply."
+              data-msg-result="200 {operator} {percent} = {result}."
+            >
               <p class="figure-title">Try the calculation</p>
               <div
                 class="percent-operation"
@@ -1115,7 +1142,16 @@ SPEED: 6</code></pre>
         </div>
       </div>
     </footer>
-    <p class="sr-only" id="copy-status" role="status" aria-live="polite"></p>
+    <p
+      class="sr-only"
+      id="copy-status"
+      role="status"
+      aria-live="polite"
+      data-copied="Copied"
+      data-selected="Selected"
+      data-status-copied="Code copied to clipboard."
+      data-status-selected="Code selected. Use your keyboard to copy it."
+    ></p>
     <a class="back-to-top" href="#top" aria-label="Back to top">
       <span aria-hidden="true">↑</span> Top
     </a>

@@ -5,6 +5,9 @@ function initializePercentDemo() {
   const expression = demo.querySelector("[data-percent-expression]");
   const status = demo.querySelector("[data-percent-status]");
   const equals = demo.querySelector('[data-percent-key="equals"]');
+  // The page owns the localized messages; {name} marks an inserted value.
+  const message = (name, values = {}) =>
+    demo.dataset[name].replace(/\{(\w+)\}/g, (_, key) => values[key]);
   const operations = demo.querySelectorAll("[data-percent-operation]");
   let operation = "add";
   let stage = "input";
@@ -24,12 +27,10 @@ function initializePercentDemo() {
     equals.disabled = stage !== "percent";
     status.textContent =
       stage === "input"
-        ? "Press % to see what happens to 10."
+        ? message("msgInput")
         : stage === "percent"
-          ? adding
-            ? "10% of 200 is 20. Press = to add it."
-            : "For multiplication, 10 becomes 0.1. Press = to multiply."
-          : `200 ${operator} ${percent} = ${result}.`;
+          ? message(adding ? "msgPercentAdd" : "msgPercentMultiply")
+          : message("msgResult", { operator, percent, result });
   };
 
   operations.forEach((button) => {

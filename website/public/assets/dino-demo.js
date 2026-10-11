@@ -11,6 +11,9 @@ function initializeDinoDemo(demo) {
   const auto = demo.querySelector("[data-dino-auto]");
   const output = demo.querySelector("[data-dino-speed]");
   const status = demo.querySelector("[data-dino-status]");
+  // The page owns the localized messages; {name} marks an inserted value.
+  const message = (name, values = {}) =>
+    demo.dataset[name].replace(/\{(\w+)\}/g, (_, key) => values[key]);
   const ground = 148;
   const dinosaurX = 52;
   const dinosaur = new Path2D(
@@ -67,7 +70,9 @@ function initializeDinoDemo(demo) {
     context.font = "13px monospace";
     context.textAlign = "right";
     context.fillText(
-      `DISTANCE ${String(Math.floor(distance / 100)).padStart(4, "0")}`,
+      message("msgDistance", {
+        distance: String(Math.floor(distance / 100)).padStart(4, "0"),
+      }),
       580,
       28,
     );
@@ -75,18 +80,18 @@ function initializeDinoDemo(demo) {
       context.textAlign = "center";
       context.font = "15px system-ui";
       context.fillText(
-        crashed ? "Hit a cactus. Try another speed." : "Space or Jump ↑",
+        message(crashed ? "msgCanvasCrashed" : "msgCanvasReady"),
         330,
         85,
       );
     }
   };
 
-  const stop = (message) => {
+  const stop = (notice) => {
     running = false;
     cancelAnimationFrame(frame);
-    start.textContent = crashed ? "Play again" : "Play";
-    if (message) status.textContent = message;
+    start.textContent = message(crashed ? "msgPlayAgain" : "msgPlay");
+    if (notice) status.textContent = notice;
     draw();
   };
 
@@ -99,8 +104,8 @@ function initializeDinoDemo(demo) {
     obstacles = [{ x: 550, height: 38 }];
     if (auto.checked) speed = SPEED_RULE.start;
     elapsed = 0;
-    start.textContent = "Play";
-    status.textContent = "Press Play, then jump over the cactus.";
+    start.textContent = message("msgPlay");
+    status.textContent = message("msgReady");
     updateSpeedDisplay();
     draw();
   };
@@ -134,7 +139,7 @@ function initializeDinoDemo(demo) {
       )
     ) {
       crashed = true;
-      stop("Hit a cactus. Press Play again, or change the speed and restart.");
+      stop(message("msgCrashed"));
     }
   };
 
@@ -157,8 +162,8 @@ function initializeDinoDemo(demo) {
     running = true;
     lastTime = performance.now();
     elapsed = 0;
-    start.textContent = "Pause";
-    status.textContent = "Running. Space or Jump clears a cactus.";
+    start.textContent = message("msgPause");
+    status.textContent = message("msgRunning");
     frame = requestAnimationFrame(animate);
   };
 
@@ -169,7 +174,7 @@ function initializeDinoDemo(demo) {
   };
 
   start.addEventListener("click", () => {
-    if (running) stop("Paused. Press Play to continue.");
+    if (running) stop(message("msgPaused"));
     else play();
   });
   demo.querySelector("[data-dino-jump]").addEventListener("click", jump);
@@ -188,25 +193,25 @@ function initializeDinoDemo(demo) {
     auto.checked = false;
     speed = Number(slider.value);
     updateSpeedDisplay();
-    status.textContent = running
-      ? `Fixed speed: ${speed.toFixed(1)}. Space or Jump clears a cactus.`
-      : `Fixed speed: ${speed.toFixed(1)}. Press Play to try it.`;
+    status.textContent = message(
+      running ? "msgFixedRunning" : "msgFixedStopped",
+      { speed: speed.toFixed(1) },
+    );
     draw();
   });
   auto.addEventListener("change", () => {
     if (auto.checked) speed = SPEED_RULE.start;
     updateSpeedDisplay();
     status.textContent = auto.checked
-      ? "Recovered rule: start at 6, then increase toward 13."
-      : `Fixed speed: ${speed.toFixed(1)}.`;
+      ? message("msgRule")
+      : message("msgFixed", { speed: speed.toFixed(1) });
   });
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden && running) stop("Paused. Press Play to continue.");
+    if (document.hidden && running) stop(message("msgPaused"));
   });
   if ("IntersectionObserver" in window) {
     new IntersectionObserver((entries) => {
-      if (!entries[0].isIntersecting && running)
-        stop("Paused. Press Play to continue.");
+      if (!entries[0].isIntersecting && running) stop(message("msgPaused"));
     }).observe(demo);
   }
   demo.querySelector(".dino-fallback").setAttribute("hidden", "");
@@ -229,7 +234,8 @@ speedCheck?.addEventListener("click", () => {
     matches =
       matches && speed === cell.parentElement.children[1].textContent.trim();
   });
-  document.querySelector("[data-speed-check-status]").textContent = matches
-    ? "Replayed the recovered rule. All four values match the controlled original-game check when rounded to three decimals."
-    : "The replay differs from the recorded original-game values. Compare the speed rule and settings above.";
+  const status = document.querySelector("[data-speed-check-status]");
+  status.textContent = matches
+    ? status.dataset.msgMatch
+    : status.dataset.msgMismatch;
 });

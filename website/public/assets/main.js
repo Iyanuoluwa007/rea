@@ -1,10 +1,15 @@
 function initializeCopyButtons() {
+  // The shared footer owns the localized copy messages.
+  const status = document.getElementById("copy-status");
+  if (status === null) return;
+  const messages = status.dataset;
+
   document.querySelectorAll("[data-copy]").forEach((button) => {
+    const label = button.textContent;
     button.addEventListener("click", async () => {
       const target = document.getElementById(button.getAttribute("data-copy"));
       if (target === null) return;
 
-      const status = document.getElementById("copy-status");
       const content = target.textContent.trim();
       const text =
         target.closest(".terminal-prompt") === null
@@ -12,8 +17,8 @@ function initializeCopyButtons() {
           : content.replace(/\s+/g, " ");
       try {
         await navigator.clipboard.writeText(text);
-        button.textContent = "Copied";
-        if (status !== null) status.textContent = "Code copied to clipboard.";
+        button.textContent = messages.copied;
+        status.textContent = messages.statusCopied;
       } catch {
         const range = document.createRange();
         range.selectNodeContents(target);
@@ -22,13 +27,12 @@ function initializeCopyButtons() {
           selection.removeAllRanges();
           selection.addRange(range);
         }
-        button.textContent = "Selected";
-        if (status !== null)
-          status.textContent = "Code selected. Use your keyboard to copy it.";
+        button.textContent = messages.selected;
+        status.textContent = messages.statusSelected;
       }
 
       window.setTimeout(() => {
-        button.textContent = "Copy";
+        button.textContent = label;
       }, 2000);
     });
   });
@@ -128,8 +132,15 @@ async function initializeGitHubStars() {
     const stars = repository.stargazers_count;
     if (!Number.isSafeInteger(stars) || stars < 0) return;
 
-    const formatted = new Intl.NumberFormat("en-US").format(stars);
-    const label = `REA on GitHub (${formatted} ${stars === 1 ? "star" : "stars"})`;
+    // The shared header owns one localized label per plural category.
+    const lang = document.documentElement.lang || undefined;
+    const category = new Intl.PluralRules(lang).select(stars);
+    const template =
+      link.dataset[`label${category[0].toUpperCase()}${category.slice(1)}`] ??
+      link.dataset.labelOther;
+    if (template === undefined) return;
+    const formatted = new Intl.NumberFormat(lang).format(stars);
+    const label = template.replace("{count}", formatted);
     count.textContent = formatted;
     count.hidden = false;
     link.setAttribute("aria-label", label);

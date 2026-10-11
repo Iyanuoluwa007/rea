@@ -54,8 +54,9 @@
     <script src="../assets/main.js" defer></script>
   </head>
   <body id="top">
-    <a class="skip-link" href="#main">Skip to content</a>
     <!-- website:header:start -->
+    <!-- prettier-ignore -->
+    <a class="skip-link" href="#main">Skip to content</a>
     <!-- prettier-ignore -->
     <header class="site-header">
       <div class="container header-inner">
@@ -76,6 +77,8 @@
             href="https://github.com/morluto/rea"
             aria-label="REA on GitHub"
             title="REA on GitHub"
+            data-label-one="REA on GitHub ({count} star)"
+            data-label-other="REA on GitHub ({count} stars)"
           >
             <svg
               width="22"
@@ -222,7 +225,16 @@
         </div>
       </div>
     </footer>
-    <p class="sr-only" id="copy-status" role="status" aria-live="polite"></p>
+    <p
+      class="sr-only"
+      id="copy-status"
+      role="status"
+      aria-live="polite"
+      data-copied="Copied"
+      data-selected="Selected"
+      data-status-copied="Code copied to clipboard."
+      data-status-selected="Code selected. Use your keyboard to copy it."
+    ></p>
     <a class="back-to-top" href="#top" aria-label="Back to top">
       <span aria-hidden="true">↑</span> Top
     </a>

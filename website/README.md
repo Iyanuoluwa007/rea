@@ -7,8 +7,11 @@
 An English static website with explanatory figures, worked guides and Aegis, DX-Ball, Notion, TH04 and CTF investigations.
 The public files are in `website/public/`. The site uses HTML, CSS and small
 scripts for copying code, following code comparisons and playing the dinosaur
-speed reconstruction. Small Python commands maintain shared HTML, prepare
-downloads and check the site. There is no frontend framework, bundler or npm
+speed reconstruction. The scripts contain no reader-facing text: copy messages
+and the GitHub star label come from the shared header and footer, and each demo
+reads its messages from `data-msg-*` attributes in the page, with `{name}`
+placeholders for inserted values. Small Python commands maintain shared HTML,
+prepare downloads and check the site. There is no frontend framework, bundler or npm
 dependency. The checked-in HTML works as ordinary static files.
 
 [style-guide.md](style-guide.md) explains the writing, page structure, figures,
