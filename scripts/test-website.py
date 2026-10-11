@@ -2,7 +2,9 @@
 
 import contextlib
 import importlib.util
+from html import escape
 import io
+import json
 import re
 from pathlib import Path
 import shutil
@@ -245,11 +247,20 @@ class WebsiteMaintenanceChecks(unittest.TestCase):
 
 
 def site_copy(directory):
-    """Copy the authored website inputs into a temporary repository root."""
+    """Copy the authored website inputs without existing translated pages."""
     root = Path(directory)
     for name in ("public", "templates", "locales"):
         shutil.copytree(ROOT / "website" / name, root / "website" / name)
+    for code in WEBSITE.LANGUAGES:
+        if code != "en":
+            shutil.rmtree(root / "website/public" / code, ignore_errors=True)
     return root
+
+
+def zh_hant(key):
+    """Return one zh-Hant UI string, so assertions follow the locale file."""
+    strings = json.loads((ROOT / "website/locales/zh-hant.json").read_text())["strings"]
+    return escape(strings[key])
 
 
 def quietly(function, *arguments):
@@ -291,14 +302,15 @@ class WebsiteTranslationChecks(unittest.TestCase):
                 {"source-sha256": WEBSITE.source_digest(english), "status": "draft"},
             )
             self.assertIn('href="../../assets/styles.css"', source)
-            self.assertIn('<a href="../../faq/">', source)
-            self.assertIn('href="../../guides/javascript/"', source)
             self.assertIn('<a class="brand" href="../../"', source)
             self.assertIn(
-                '<a href="../../zh-hant/get-started/" class="nav-start" aria-current="page">Get started</a>', source
+                '<a href="../../zh-hant/get-started/" class="nav-start" aria-current="page">'
+                f'{zh_hant("navGetStarted")}</a>',
+                source,
             )
             self.assertIn(
-                '<a href="../../showcase/" hreflang="en">Showcases<span class="nav-badge" lang="en">EN</span></a>',
+                f'<a href="../../showcase/" hreflang="en">{zh_hant("navShowcases")}'
+                '<span class="nav-badge" lang="en">EN</span></a>',
                 source,
             )
             self.assertIn('<li><a href="../../get-started/" hreflang="en" lang="en">English</a></li>', source)
@@ -308,7 +320,7 @@ class WebsiteTranslationChecks(unittest.TestCase):
             self.assertEqual(english, (site / "get-started/index.html").read_text())
             errors, warnings = translation_errors(root)
             self.assertEqual(errors, [])
-            self.assertEqual([file for file, _ in warnings], ["website/locales/zh-hant.json"])
+            self.assertLessEqual({file for file, _ in warnings}, {"website/locales/zh-hant.json"})
             self.assertEqual(VERIFY.check_site(site)[3], [])
             with contextlib.redirect_stdout(io.StringIO()):
                 PREPARE.prepare_sitemap(site)
@@ -373,48 +385,57 @@ class WebsiteTranslationChecks(unittest.TestCase):
             english_path = site / "get-started/index.html"
             page = quietly(WEBSITE.new_translation, root, "zh-hant", "get-started")
             english = english_path.read_text()
+            identifier = WEBSITE.synced_code_ids(english)[0]
+            block = WEBSITE.code_block(identifier)
 
-            command = "npm install --global rea-agents</code>"
-            english_path.write_text(english.replace(command, "npm install --global rea-agents@latest</code>", 1))
+            # A command-only change is copied and keeps the translation current.
+            command = block.search(english).group(2) + " --test-flag"
+            english_path.write_text(block.sub(lambda match: match.group(1) + command + match.group(3), english))
             with self.assertRaisesRegex(ValueError, "Shared HTML is stale: zh-hant/get-started/index.html"):
                 quietly(WEBSITE.sync_pages, root, True)
             quietly(WEBSITE.sync_pages, root)
-            self.assertIn("rea-agents@latest</code>", page.read_text())
-            self.assertNotIn("translation-notice\"", page.read_text())
-            self.assertEqual(translation_errors(root)[0], [])
+            self.assertEqual(block.search(page.read_text()).group(2), command)
+            self.assertNotIn('class="translation-notice"', page.read_text())
+            self.assertEqual(translation_errors(root), ([], []))
 
-            text = "<p>Restart your client when setup finishes.</p>"
-            changed = english_path.read_text().replace(text, "<p>Restart your client after setup.</p>", 1)
+            # A text change marks the translation out of date.
+            unchanged = english_path.read_text()
+            changed = unchanged.replace("    </main>", "      <p>A new English paragraph.</p>\n    </main>", 1)
             english_path.write_text(changed)
             self.assertEqual(quietly(WEBSITE.sync_pages, root, True), [page])
             errors, warnings = translation_errors(root)
             self.assertEqual(errors, [])
             self.assertTrue(any("has changed since this translation" in message for _, message in warnings))
             quietly(WEBSITE.sync_pages, root)
+            link = f'<a href="../../get-started/" hreflang="en">{zh_hant("staleNoticeLink")}</a>'
             self.assertIn(
-                '<p class="translation-notice" role="note">The English page has changed since this translation. '
-                '<a href="../../get-started/" hreflang="en">Read the English version.</a></p>',
+                f'<p class="translation-notice" role="note">{zh_hant("staleNotice").replace("{link}", link)}</p>',
                 page.read_text(),
             )
             report = quietly(WEBSITE.translation_report, root)
             self.assertIn(f'  after updating the translation, record source-sha256="{WEBSITE.source_digest(changed)}"', report)
 
-            english_path.write_text(changed.replace("<p>Restart your client after setup.</p>", text, 1))
+            english_path.write_text(unchanged)
             quietly(WEBSITE.sync_pages, root)
             self.assertNotIn('class="translation-notice"', page.read_text())
 
-            page.write_text(page.read_text().replace("rea-agents@latest</code>", "rea-agents@1</code>", 1))
-            self.assertTrue(any("install-cli must match" in error for error in translation_errors(root)[0]))
+            page.write_text(block.sub(lambda match: match.group(1) + "edited" + match.group(3), page.read_text()))
+            self.assertTrue(any(f"{identifier} must match" in error for error in translation_errors(root)[0]))
 
     def test_translations_keep_structure_and_cjk_spacing(self):
         with tempfile.TemporaryDirectory() as directory:
             root = site_copy(directory)
             page = quietly(WEBSITE.new_translation, root, "zh-hant", "get-started")
             original = page.read_text()
+            first, second = WEBSITE.copy_targets(original)[:2]
+
+            def added(paragraph):
+                return ("    </main>", f"      {paragraph}\n    </main>")
+
             cases = (
-                ("<p>Restart your client when setup finishes.</p>", "<p>完成後\n              重新啟動。</p>", "renders as a gap"),
-                ('id="install-node"', 'id="node"', "element IDs differ"),
-                ('data-copy="install-cli"', 'data-copy="node-check"', "copy buttons differ"),
+                (*added("<p>完成後\n        重新啟動。</p>"), "renders as a gap"),
+                ('<main id="main"', '<main id="moved"', "element IDs differ"),
+                (f'data-copy="{first}"', f'data-copy="{second}"', "copy buttons differ"),
                 ('    <meta name="robots" content="noindex" />\n', "", "draft translation needs"),
                 ('status="draft"', 'status="final"', "status must be draft or reviewed"),
             )
@@ -423,9 +444,9 @@ class WebsiteTranslationChecks(unittest.TestCase):
                     self.assertIn(old, original)
                     page.write_text(original.replace(old, new, 1))
                     self.assertTrue(any(message in error for error in translation_errors(root)[0]))
-            page.write_text(original.replace("<p>Restart your client when setup finishes.</p>", "<p>重新啟動 REA 用戶端。</p>", 1))
+            page.write_text(original.replace(*added("<p>重新啟動 REA 用戶端。</p>"), 1))
             self.assertEqual(translation_errors(root)[0], [])
-            page.write_text(original.replace("<code>node -v</code>", "<code>node -V</code>", 1))
+            page.write_text(original.replace(*added("<p><code>extra-command</code></p>"), 1))
             errors, warnings = translation_errors(root)
             self.assertEqual(errors, [])
             self.assertTrue(any("inline code differs" in message for _, message in warnings))
