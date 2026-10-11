@@ -1589,9 +1589,10 @@ export const parseNativeAotPe = (
           ? "raw-image-pointer-scan"
           : "raw-image-and-rehydrated-pointer-scan",
     },
-    diagnostics: (hydrationError === null
+    diagnostics:
+      hydrationError === null
         ? []
-        : [`Read-only hydration stopped: ${hydrationError}`]),
+        : [`Read-only hydration stopped: ${hydrationError}`],
     limitations: reportLimitations,
   };
   if (Buffer.byteLength(JSON.stringify(summary)) > maximumSummaryBytes)
