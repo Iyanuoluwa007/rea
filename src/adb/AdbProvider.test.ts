@@ -495,7 +495,7 @@ it("reads a bounded logcat dump with the caller count and buffer", async () => {
   const { binary } = await writeAdbStub(
     shellStub({
       logcat:
-        "08-10 13:00:00.000 I/Tag( 123): first\\n08-10 13:00:01.000 I/Tag( 123): second\\n",
+        "08-10 13:00:00.000 I/Tag( 123): first\n08-10 13:00:01.000 I/Tag( 123): second\n",
     }),
   );
   const result = await evidenceResult(providerOver(binary), {
@@ -903,7 +903,7 @@ it("resolves packages by case-insensitive substring", async () => {
   const { binary } = await writeAdbStub(
     shellStub({
       "pm:list":
-        "package:/data/app/x/base.apk=com.whatsapp\\npackage:/data/app/y/base.apk=com.whatsapp.w4b\\npackage:/data/app/z/base.apk=com.example\\n",
+        "package:/data/app/x/base.apk=com.whatsapp\npackage:/data/app/y/base.apk=com.whatsapp.w4b\npackage:/data/app/z/base.apk=com.example\n",
     }),
   );
   const result = await evidenceResult(providerOver(binary), {
@@ -1111,10 +1111,11 @@ it("quotes caller text before adb joins the remote shell command", async () => {
   const { binary, root } = await writeAdbStub(
     (root) => `if [ "$1" = "version" ]; then ${VERSION_BLOCK}; exit 0; fi
 shift 3
-# Model adb's remote command joining, then execute the resulting shell string.
-printf '#!/bin/sh\nprintf "%%s" "$@" > "${join(root, "observed")}"\n' > "${join(root, "ls")}"
-chmod +x "${join(root, "ls")}"
-PATH="${root}:$PATH" sh -c "$*"
+# Model adb's remote command joining, then let the device shell parse the
+# joined string. Its \`sh\` records the arguments it receives.
+printf '#!/bin/sh\nprintf "%%s\\\\000" "$@" > "${join(root, "observed")}"\n' > "${join(root, "sh")}"
+chmod +x "${join(root, "sh")}"
+PATH="${root}:$PATH" /bin/sh -c "$*"
 `,
   );
   const value = `/sdcard/a 'quoted'; touch ${join(root, "injected")}`;
@@ -1122,7 +1123,8 @@ PATH="${root}:$PATH" sh -c "$*"
     operation: "list_adb_directory",
     input: { serial: "device", device_path: value },
   });
-  expect(await readFile(join(root, "observed"), "utf8")).toContain(value);
+  const observed = (await readFile(join(root, "observed"), "utf8")).split("\0");
+  expect(observed.slice(2, 4)).toEqual(["rea-list-directory", value]);
   await expect(readFile(join(root, "injected"))).rejects.toThrow();
 });
 
