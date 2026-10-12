@@ -479,3 +479,21 @@ describe("evidence bundle filesystem adapter", () => {
     });
   });
 });
+
+describe("evidence bundle single-record selection", () => {
+  it("keeps a tampered single record an integrity failure", async () => {
+    const directory = await createTestTempDirectory("rea-evidence-");
+    const record = bundle().records[0];
+    // A record whose identifier no longer matches its content is damaged,
+    // not a mis-selected file.
+    const tampered = join(directory, "tampered-record.json");
+    await writeFile(
+      tampered,
+      JSON.stringify({ ...record, operation: "tampered_operation" }),
+    );
+    expect(await readEvidenceBundle(tampered)).toMatchObject({
+      ok: false,
+      error: { _tag: "EvidenceIntegrityError" },
+    });
+  });
+});

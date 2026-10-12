@@ -219,10 +219,17 @@ export const describeEvidenceBundleFailure = (
     : `Evidence bundle validation failed: ${describeValidationFailure(cause)}. Recreate or re-export the bundle, then try again.`;
 };
 
-/** Identify a single Evidence record supplied where a bundle is expected. */
+/**
+ * Identify an authentic single Evidence record supplied where a bundle is
+ * expected. A record whose semantic identifier does not match its content is
+ * damaged, not a mis-selected file, so it remains an integrity failure.
+ */
 export const singleEvidenceRecordId = (input: unknown): string | undefined => {
-  const record = evidenceSchema.safeParse(input);
-  return record.success ? record.data.evidence_id : undefined;
+  try {
+    return parseEvidence(input).evidence_id;
+  } catch {
+    return undefined;
+  }
 };
 
 /** Explain how to obtain a bundle when one Evidence record was supplied. */
