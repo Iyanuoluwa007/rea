@@ -6,7 +6,7 @@
 
 ### Ein MCP für das Reverse Engineering von Binärdateien, Anwendungen und Laufzeitverhalten.
 
-**Eine Funktion gefällt dir? Verstehe, wie sie funktioniert – bis hinunter auf die Binärebene.**
+**Verstehe, wie Software funktioniert, bis hinunter auf die Binärebene – für Sicherheitsforschung, Interoperabilität und Software, die du analysieren darfst.**
 
 [![npm version](https://img.shields.io/npm/v/rea-agents?style=flat-square&color=cb3837)](https://www.npmjs.com/package/rea-agents)
 [![MCP tool catalog](https://img.shields.io/badge/MCP-tool_catalog-5c4ee5?style=flat-square)](docs/mcp-contracts.md#generated-catalog)
@@ -47,13 +47,30 @@
 
 ---
 
-Du hast in einer App eine Funktion entdeckt, die du in dein eigenes Produkt übernehmen möchtest? Lass deinen Agenten sie mit REA untersuchen. Er kann die App ohne ihren Quellcode analysieren, die Funktionsweise erklären, Belege zeigen und eine passende Umsetzung für dein Projekt entwickeln.
+REA hilft Sicherheitsforschern, Malware-Analysten, CTF-Spielern und Entwicklern, kompilierte Software mithilfe ihrer Agenten zu verstehen. Richte deinen Agenten auf eine Binärdatei, eine Anwendung oder eine Aufzeichnung, die du analysieren darfst; REA untersucht sie ohne Quellcode, erklärt ihr Verhalten und zeigt die Belege hinter jeder Schlussfolgerung.
 
 REA verbindet deinen Agenten mit Werkzeugen zum Untersuchen nativer Binärdateien, von JavaScript- und Electron-Apps, .NET-Assemblies und Websites. Dieselben Werkzeuge kannst du auch im Terminal nutzen. Die Analyse läuft lokal; die Ergebnisse enthalten die Belege und Einschränkungen hinter jeder Schlussfolgerung.
 
 Die Einrichtung registriert REA bei deinem Agenten und installiert passende Workflow-Anweisungen. Für native Analysen kannst du eine vorhandene Hopper- oder Ghidra-Installation verwenden. Mit deiner Zustimmung kann die Einrichtung auch Hopper installieren. Statische JavaScript-Analysen benötigen keines der beiden Programme.
 
 > **[Besuche die REA-Website](https://rea.tools/de/)** für Einrichtungshinweise, bebilderte Anleitungen und echte Fallstudien.
+
+## Verantwortungsvolle Nutzung
+
+REA ist für rechtmäßige Analysen gedacht: Sicherheitsforschung, Malware- und Vorfallsanalyse, Schwachstellenforschung und koordinierte Offenlegung, CTFs und Lehre, Interoperabilität, Softwarebewahrung sowie das Debuggen oder Prüfen von Software, die dir gehört oder die du untersuchen darfst.
+
+Das REA-Projekt unterstützt Folgendes nicht und hilft auch nicht dabei:
+
+- DRM, Lizenzprüfungen, Anti-Cheat-Systeme oder andere technische Schutzmaßnahmen zu umgehen;
+- Cheats für Spiele zu entwickeln oder Onlinedienste zu manipulieren;
+- Authentifizierung, Bot-Schutz oder Zugriffskontrollen auf Systemen zu umgehen, die du nicht testen darfst;
+- proprietäre Software zu kopieren oder ihren geschützten Code und ihre geschützten Assets zu reproduzieren;
+- die Nutzungsrichtlinien oder Sicherheitsmaßnahmen von KI-Modellanbietern zu unterlaufen;
+- KI-Konten oder API-Zugänge weiterzuverkaufen oder zu teilen.
+
+Du bist dafür verantwortlich, erforderliche Genehmigungen einzuholen und geltendes Recht, Lizenzvereinbarungen und Nutzungsbedingungen einzuhalten. Reverse Engineering kann in deiner Rechtsordnung oder durch die Lizenz der analysierten Software eingeschränkt sein.
+
+Anfragen nach Hilfe bei den oben genannten Zwecken werden in Issues und Diskussionen ohne Antwort geschlossen und können zum Ausschluss aus der REA-Community führen.
 
 ## Schnellstart
 
@@ -72,10 +89,11 @@ Die Einrichtung unterstützt Claude Code, Codex, Cursor, Gemini CLI, Grok Build 
 ### Deinen Agenten fragen
 
 ```text
-Untersuche, wie die Suche in der Notes-App funktioniert, zeige mir die Belege und entwickle eine ähnliche Funktion für mein Projekt.
+Der Release-Build meiner App stürzt beim Start ab, der Debug-Build aber nicht.
+Untersuche ./build/MyApp, finde heraus, wo die beiden Builds voneinander abweichen, und zeige mir die Belege.
 ```
 
-Ersetze Notes durch deine Ziel-App und benenne die Funktion, die du verstehen möchtest.
+Richte deinen Agenten auf ein Ziel, das du analysieren darfst, und beschreibe, was du verstehen möchtest.
 
 ### Das Terminal verwenden
 
@@ -272,7 +290,7 @@ Danke an alle, die REA nutzen, Fehler melden, Funktionswünsche äußern, Builds
 
 ## Haftungsausschluss
 
-REA stellt Werkzeuge für rechtmäßige Reverse-Engineering-Forschung, Analyse und Rekonstruktion bereit. Du bist dafür verantwortlich, erforderliche Genehmigungen einzuholen und geltendes Recht einzuhalten. Das Projekt unterstützt keine rechtswidrige oder unbefugte Nutzung.
+Siehe [Verantwortungsvolle Nutzung](#verantwortungsvolle-nutzung).
 
 ## Mitwirken
 

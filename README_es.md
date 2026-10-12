@@ -6,7 +6,7 @@
 
 ### Un solo MCP para la ingeniería inversa de binarios, aplicaciones y comportamiento en ejecución.
 
-**¿Ves una función que te gusta? Entiende cómo funciona, hasta el nivel binario.**
+**Entiende cómo funciona el software, hasta el nivel binario — para la investigación de seguridad, la interoperabilidad y el software que tienes autorización para analizar.**
 
 [![npm version](https://img.shields.io/npm/v/rea-agents?style=flat-square&color=cb3837)](https://www.npmjs.com/package/rea-agents)
 [![MCP tool catalog](https://img.shields.io/badge/MCP-tool_catalog-5c4ee5?style=flat-square)](docs/mcp-contracts.md#generated-catalog)
@@ -47,13 +47,30 @@
 
 ---
 
-¿Has visto una función en una aplicación que quieres incorporar a tu producto? Pide a tu agente que la investigue con REA. Puede inspeccionar la aplicación sin su código fuente, explicar cómo funciona la función, mostrar las pruebas y crear una versión para tu proyecto.
+REA ayuda a investigadores de seguridad, analistas de malware, participantes en CTF y desarrolladores a entender software compilado a través de sus agentes. Dirige a tu agente a un binario, una aplicación o una captura que tengas autorización para analizar; REA lo inspecciona sin código fuente, explica su comportamiento y muestra las pruebas en las que se basa cada conclusión.
 
 REA conecta tu agente con herramientas para inspeccionar binarios nativos, aplicaciones JavaScript y Electron, ensamblados .NET y sitios web. También puedes usar las mismas herramientas desde la terminal. El análisis se ejecuta localmente y los resultados incluyen las pruebas y limitaciones que sustentan cada conclusión.
 
 La configuración registra REA en tu agente e instala las instrucciones de trabajo correspondientes. El análisis nativo puede usar una instalación existente de Hopper o Ghidra; la configuración también puede instalar Hopper, si lo autorizas. El análisis estático de JavaScript no necesita ninguno de los dos motores.
 
 > **[Visita el sitio web de REA](https://rea.tools/es/)** para encontrar instrucciones de configuración, guías ilustradas y casos reales.
+
+## Uso responsable
+
+REA está pensado para el análisis lícito: investigación de seguridad, análisis de malware e incidentes, investigación de vulnerabilidades y divulgación coordinada, CTF y educación, interoperabilidad, preservación de software, y depuración o auditoría de software que te pertenece o que tienes autorización para examinar.
+
+El proyecto REA no respalda lo siguiente ni ayudará con ello:
+
+- eludir DRM, comprobaciones de licencia, sistemas antitrampas u otras medidas técnicas de protección;
+- desarrollar trampas para juegos o manipular servicios en línea;
+- eludir la autenticación, la protección contra bots o los controles de acceso en sistemas que no tienes autorización para probar;
+- copiar software propietario o reproducir su código y sus recursos protegidos;
+- evadir las políticas de uso o las medidas de seguridad de los proveedores de modelos de IA;
+- revender o compartir cuentas de IA o acceso a API.
+
+Eres responsable de obtener las autorizaciones necesarias y de cumplir las leyes, los acuerdos de licencia y las condiciones de servicio aplicables. La ingeniería inversa puede estar restringida en tu jurisdicción o por la licencia del software que analizas.
+
+Las solicitudes de ayuda para los usos anteriores se cerrarán sin respuesta en las issues y las discusiones, y pueden dar lugar a la expulsión de la comunidad de REA.
 
 ## Inicio rápido
 
@@ -72,10 +89,11 @@ La configuración admite Claude Code, Codex, Cursor, Gemini CLI, Grok Build y [o
 ### Pregunta a tu agente
 
 ```text
-Investiga cómo funciona la búsqueda en la aplicación Notes, muéstrame las pruebas y crea una función similar para mi proyecto.
+La compilación de release de mi aplicación se bloquea al iniciarse, pero la de depuración no.
+Inspecciona ./build/MyApp, encuentra dónde divergen las dos compilaciones y muéstrame las pruebas.
 ```
 
-Sustituye Notes por la aplicación objetivo y especifica la función que quieres entender.
+Dirige a tu agente a un objetivo que tengas autorización para analizar y describe lo que quieres entender.
 
 ### Usa la terminal
 
@@ -272,7 +290,7 @@ Gracias a quienes usan REA, informan de errores, solicitan funciones, prueban co
 
 ## Aviso legal
 
-REA proporciona herramientas para la investigación, el análisis y la reconstrucción mediante ingeniería inversa conforme a la ley. Eres responsable de obtener las autorizaciones necesarias y cumplir las leyes aplicables. El proyecto no respalda usos ilegales ni no autorizados.
+Consulta [Uso responsable](#uso-responsable).
 
 ## Contribuir
 

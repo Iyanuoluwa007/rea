@@ -6,7 +6,7 @@
 
 ### Jeden serwer MCP do inżynierii wstecznej plików binarnych, aplikacji i zachowania w czasie wykonywania.
 
-**Widzisz funkcję, która Ci się podoba? Dowiedz się, jak działa, aż do poziomu kodu binarnego.**
+**Zrozum, jak działa oprogramowanie, aż do poziomu kodu binarnego — na potrzeby badań nad bezpieczeństwem, interoperacyjności i oprogramowania, do którego analizy masz uprawnienia.**
 
 [![npm version](https://img.shields.io/npm/v/rea-agents?style=flat-square&color=cb3837)](https://www.npmjs.com/package/rea-agents)
 [![MCP tool catalog](https://img.shields.io/badge/MCP-tool_catalog-5c4ee5?style=flat-square)](docs/mcp-contracts.md#generated-catalog)
@@ -47,13 +47,30 @@
 
 ---
 
-Widzisz w aplikacji funkcję, którą chcesz mieć we własnym produkcie? Poproś swojego agenta, aby zbadał ją za pomocą REA. Może przeanalizować aplikację bez jej kodu źródłowego, wyjaśnić działanie funkcji, pokazać dowody i stworzyć jej wersję dla Twojego projektu.
+REA pomaga badaczom bezpieczeństwa, analitykom złośliwego oprogramowania, uczestnikom CTF i programistom zrozumieć skompilowane oprogramowanie za pośrednictwem ich agentów. Wskaż agentowi plik binarny, aplikację lub przechwycenie ruchu, do których analizy masz uprawnienia; REA zbada wskazany cel bez kodu źródłowego, wyjaśni jego działanie i pokaże dowody stojące za każdym wnioskiem.
 
 REA łączy Twojego agenta z narzędziami do analizy natywnych plików binarnych, aplikacji JavaScript i Electron, zestawów .NET oraz stron internetowych. Z tych samych narzędzi możesz korzystać w terminalu. Analiza odbywa się lokalnie, a wyniki zawierają dowody i ograniczenia stojące za każdym wnioskiem.
 
 Konfigurator rejestruje REA w Twoim agencie i instaluje pasujące instrukcje pracy. Analiza kodu natywnego może korzystać z istniejącej instalacji Hoppera lub Ghidry; konfigurator może też zainstalować Hoppera po uzyskaniu zgody. Statyczna analiza JavaScript nie wymaga żadnego z tych silników.
 
 > **[Odwiedź stronę REA](https://rea.tools/pl/)**, aby znaleźć instrukcje konfiguracji, ilustrowane przewodniki i rzeczywiste studia przypadków.
+
+## Odpowiedzialne korzystanie
+
+REA powstało z myślą o analizie zgodnej z prawem: badaniach nad bezpieczeństwem, analizie złośliwego oprogramowania i incydentów, badaniu podatności i skoordynowanym ujawnianiu, CTF i edukacji, interoperacyjności, zachowywaniu oprogramowania oraz debugowaniu lub audytowaniu oprogramowania, które należy do Ciebie lub do którego badania masz uprawnienia.
+
+Projekt REA nie wspiera następujących działań i nie będzie w nich pomagać:
+
+- obchodzenia DRM, kontroli licencji, systemów anti-cheat ani innych technicznych środków ochrony;
+- tworzenia cheatów do gier ani ingerowania w usługi online;
+- obchodzenia uwierzytelniania, ochrony przed botami lub kontroli dostępu w systemach, do których testowania nie masz uprawnień;
+- kopiowania oprogramowania własnościowego ani odtwarzania jego chronionego kodu i zasobów;
+- omijania zasad użytkowania lub zabezpieczeń dostawców modeli AI;
+- odsprzedawania lub udostępniania kont AI albo dostępu do API.
+
+Odpowiadasz za uzyskanie wymaganych zezwoleń oraz przestrzeganie obowiązującego prawa, umów licencyjnych i warunków korzystania z usług. Inżynieria wsteczna może być ograniczona w Twojej jurysdykcji lub przez licencję analizowanego oprogramowania.
+
+Prośby o pomoc w powyższych działaniach będą zamykane bez odpowiedzi w zgłoszeniach i dyskusjach i mogą skutkować usunięciem ze społeczności REA.
 
 ## Szybki start
 
@@ -72,10 +89,11 @@ Konfigurator obsługuje Claude Code, Codex, Cursor, Gemini CLI, Grok Build i [in
 ### Zapytaj agenta
 
 ```text
-Sprawdź, jak działa wyszukiwanie w aplikacji Notes, pokaż mi dowody i stwórz podobną funkcję dla mojego projektu.
+Wersja release mojej aplikacji ulega awarii przy uruchomieniu, a wersja debug nie.
+Zbadaj ./build/MyApp, znajdź miejsce, w którym obie kompilacje się rozchodzą, i pokaż mi dowody.
 ```
 
-Zastąp Notes wybraną aplikacją i wskaż funkcję, którą chcesz zrozumieć.
+Wskaż agentowi cel, do którego analizy masz uprawnienia, i opisz, co chcesz zrozumieć.
 
 ### Korzystaj z terminala
 
@@ -272,7 +290,7 @@ Dziękujemy wszystkim, którzy używają REA, zgłaszają błędy, proponują no
 
 ## Zastrzeżenie
 
-REA dostarcza narzędzia do zgodnych z prawem badań z zakresu inżynierii wstecznej, analizy i odtwarzania. Odpowiadasz za uzyskanie wymaganych zezwoleń i przestrzeganie obowiązującego prawa. Projekt nie popiera działań nielegalnych ani nieautoryzowanych.
+Zobacz [Odpowiedzialne korzystanie](#odpowiedzialne-korzystanie).
 
 ## Współtworzenie
 

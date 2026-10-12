@@ -6,7 +6,7 @@
 
 ### Một MCP để dịch ngược tệp nhị phân, ứng dụng và hành vi khi chạy.
 
-**Thấy một tính năng bạn thích? Hiểu cách nó hoạt động, đến tận mức mã nhị phân.**
+**Hiểu cách phần mềm hoạt động, đến tận mức mã nhị phân — phục vụ nghiên cứu bảo mật, khả năng tương tác và phần mềm bạn được phép phân tích.**
 
 [![npm version](https://img.shields.io/npm/v/rea-agents?style=flat-square&color=cb3837)](https://www.npmjs.com/package/rea-agents)
 [![MCP tool catalog](https://img.shields.io/badge/MCP-tool_catalog-5c4ee5?style=flat-square)](docs/mcp-contracts.md#generated-catalog)
@@ -47,13 +47,30 @@
 
 ---
 
-Bạn thấy một tính năng trong ứng dụng và muốn đưa nó vào sản phẩm của mình? Hãy nhờ tác nhân của bạn điều tra bằng REA. Tác nhân có thể kiểm tra ứng dụng mà không cần mã nguồn, giải thích cách tính năng hoạt động, đưa ra bằng chứng và xây dựng một phiên bản cho dự án của bạn.
+REA giúp các nhà nghiên cứu bảo mật, nhà phân tích mã độc, người chơi CTF và nhà phát triển hiểu phần mềm đã biên dịch thông qua tác nhân của họ. Hãy chỉ cho tác nhân của bạn một tệp nhị phân, ứng dụng hoặc bản ghi mà bạn được phép phân tích; REA kiểm tra nó mà không cần mã nguồn, giải thích hành vi của nó và đưa ra bằng chứng đằng sau từng kết luận.
 
 REA kết nối tác nhân của bạn với các công cụ kiểm tra tệp nhị phân mã máy, ứng dụng JavaScript và Electron, assembly .NET và trang web. Bạn cũng có thể dùng các công cụ đó từ terminal. Việc phân tích chạy cục bộ; kết quả bao gồm bằng chứng và giới hạn làm cơ sở cho từng kết luận.
 
 Quá trình thiết lập đăng ký REA với tác nhân và cài đặt các hướng dẫn quy trình tương ứng. Phân tích mã máy có thể sử dụng Hopper hoặc Ghidra đã cài sẵn; quá trình thiết lập cũng có thể cài Hopper nếu bạn chấp thuận. Phân tích tĩnh JavaScript không cần công cụ nào trong hai công cụ này.
 
 > **[Truy cập trang web REA](https://rea.tools/vi/)** để xem cách thiết lập, hướng dẫn có hình minh họa và các nghiên cứu điển hình thực tế.
+
+## Sử dụng có trách nhiệm
+
+REA được xây dựng cho hoạt động phân tích hợp pháp: nghiên cứu bảo mật, phân tích mã độc và sự cố, nghiên cứu lỗ hổng và công bố có phối hợp, CTF và giáo dục, khả năng tương tác, bảo tồn phần mềm, cũng như gỡ lỗi hoặc kiểm tra phần mềm mà bạn sở hữu hoặc được phép xem xét.
+
+Dự án REA không ủng hộ và sẽ không hỗ trợ những việc sau:
+
+- vượt qua DRM, cơ chế kiểm tra giấy phép, hệ thống chống gian lận hoặc các biện pháp bảo vệ kỹ thuật khác;
+- phát triển công cụ gian lận trong trò chơi hoặc can thiệp vào dịch vụ trực tuyến;
+- vượt qua cơ chế xác thực, chống bot hoặc kiểm soát truy cập trên các hệ thống bạn không được phép kiểm thử;
+- sao chép phần mềm độc quyền hoặc tái tạo mã và tài nguyên được bảo hộ của phần mềm đó;
+- né tránh chính sách sử dụng hoặc biện pháp an toàn của các nhà cung cấp mô hình AI;
+- bán lại hoặc chia sẻ tài khoản AI hoặc quyền truy cập API.
+
+Bạn có trách nhiệm có được các quyền cho phép cần thiết và tuân thủ luật, thỏa thuận cấp phép và điều khoản dịch vụ áp dụng. Dịch ngược có thể bị hạn chế tại khu vực pháp lý của bạn hoặc bởi giấy phép của phần mềm bạn phân tích.
+
+Các yêu cầu trợ giúp cho những mục đích nêu trên sẽ bị đóng mà không phản hồi trong issue và thảo luận, và có thể dẫn đến việc bị loại khỏi cộng đồng REA.
 
 ## Bắt đầu nhanh
 
@@ -72,10 +89,11 @@ Quá trình thiết lập hỗ trợ Claude Code, Codex, Cursor, Gemini CLI, Gro
 ### Hỏi tác nhân
 
 ```text
-Tìm hiểu cách tính năng tìm kiếm trong ứng dụng Notes hoạt động, cho tôi xem bằng chứng và xây dựng tính năng tương tự cho dự án của tôi.
+Bản build release của ứng dụng tôi bị crash khi khởi động nhưng bản build debug thì không.
+Hãy kiểm tra ./build/MyApp, tìm chỗ hai bản build khác nhau và cho tôi xem bằng chứng.
 ```
 
-Thay Notes bằng ứng dụng mục tiêu và chỉ rõ tính năng bạn muốn hiểu.
+Hãy chỉ cho tác nhân của bạn một mục tiêu mà bạn được phép phân tích và mô tả điều bạn muốn hiểu.
 
 ### Sử dụng terminal
 
@@ -272,7 +290,7 @@ Cảm ơn mọi người đã sử dụng REA, báo lỗi, đề xuất tính n�
 
 ## Miễn trừ trách nhiệm
 
-REA cung cấp công cụ cho nghiên cứu dịch ngược, phân tích và tái tạo hợp pháp. Bạn có trách nhiệm có được các quyền cho phép cần thiết và tuân thủ luật áp dụng. Dự án không ủng hộ việc sử dụng trái pháp luật hoặc không được cho phép.
+Xem [Sử dụng có trách nhiệm](#sử-dụng-có-trách-nhiệm).
 
 ## Đóng góp
 

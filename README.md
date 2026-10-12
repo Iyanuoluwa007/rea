@@ -6,7 +6,7 @@
 
 ### One MCP for reverse engineering across binaries, applications, and runtime behavior.
 
-**See a feature you like. Understand how it works, down to the binary level.**
+**Understand how software works, down to the binary level — for security research, interoperability, and software you're authorized to analyze.**
 
 [![npm version](https://img.shields.io/npm/v/rea-agents?style=flat-square&color=cb3837)](https://www.npmjs.com/package/rea-agents)
 [![MCP tool catalog](https://img.shields.io/badge/MCP-tool_catalog-5c4ee5?style=flat-square)](docs/mcp-contracts.md#generated-catalog)
@@ -47,13 +47,30 @@
 
 ---
 
-See a feature in an app that you want in your own product? Ask your agent to investigate it with REA. It can inspect the app without its source code, explain how the feature works, show the evidence, and build a version for your project.
+REA helps security researchers, malware analysts, CTF players and developers understand compiled software through their agents. Point your agent at a binary, application or capture you're authorized to analyze; REA inspects it without source code, explains its behavior, and shows the evidence behind each conclusion.
 
 REA connects your agent to tools for inspecting native binaries, JavaScript and Electron apps, .NET assemblies, and websites. You can also use the same tools from your terminal. Analysis runs locally, and results include the evidence and limitations behind each conclusion.
 
 Setup registers REA with your agent and installs matching workflow instructions. Native analysis can use an existing Hopper, Ghidra, or IDA installation; setup can optionally install Hopper with approval. Static JavaScript analysis needs no native analysis engine.
 
 > **[Visit the REA website](https://rea.tools/)** for setup instructions, illustrated guides, and real case studies.
+
+## Responsible use
+
+REA is built for lawful analysis: security research, malware and incident analysis, vulnerability research and coordinated disclosure, CTFs and education, interoperability, software preservation, and debugging or auditing software you own or are authorized to examine.
+
+The REA project does not support, and will not help with:
+
+- circumventing DRM, license checks, anti-cheat systems or other technical protection measures;
+- developing game cheats or tampering with online services;
+- bypassing authentication, bot protection or access controls on systems you are not authorized to test;
+- copying proprietary software or reproducing its protected code and assets;
+- evading the usage policies or safety measures of AI model providers;
+- reselling or sharing AI accounts or API access.
+
+You are responsible for obtaining any required authorization and for complying with applicable laws, license agreements and terms of service. Reverse engineering may be restricted in your jurisdiction or by the license of the software you analyze.
+
+Requests for help with the uses above will be closed without response in issues and discussions, and may result in removal from the REA community.
 
 ## Quick start
 
@@ -77,11 +94,11 @@ manual MCP registration.
 ### Ask your agent
 
 ```text
-Understand how search works in the Notes app, show me the evidence, and build a
-similar feature for my project.
+My app's release build crashes on startup but the debug build doesn't.
+Inspect ./build/MyApp, find where the two builds diverge, and show me the evidence.
 ```
 
-Replace Notes with your target app and the feature you want to understand.
+Point your agent at a target you're authorized to analyze and describe what you want to understand.
 
 ### Use the terminal
 
@@ -331,7 +348,7 @@ Thanks to everyone using REA, reporting bugs, requesting features, testing build
 
 ## Disclaimer
 
-REA provides tools for lawful reverse-engineering research, analysis, and reconstruction. You are responsible for obtaining any required authorization and complying with applicable laws. The project does not endorse illegal or unauthorized use.
+See [Responsible use](#responsible-use).
 
 REA is an open-source software project. We have not issued or endorsed any cryptocurrency or token. Tokens using the REA name are not affiliated with the project.
 

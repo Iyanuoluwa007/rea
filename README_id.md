@@ -6,7 +6,7 @@
 
 ### Satu MCP untuk rekayasa balik pada berbagai biner, aplikasi, dan perilaku saat runtime.
 
-**Melihat fitur yang Anda sukai. Pahami cara kerjanya hingga ke tingkat biner.**
+**Pahami cara kerja perangkat lunak hingga ke tingkat biner — untuk riset keamanan, interoperabilitas, dan perangkat lunak yang diizinkan untuk Anda analisis.**
 
 [![npm version](https://img.shields.io/npm/v/rea-agents?style=flat-square&color=cb3837)](https://www.npmjs.com/package/rea-agents)
 [![MCP tool catalog](https://img.shields.io/badge/MCP-tool_catalog-5c4ee5?style=flat-square)](docs/mcp-contracts.md#generated-catalog)
@@ -47,13 +47,30 @@
 
 ---
 
-Melihat fitur dalam suatu aplikasi yang ingin Anda hadirkan di produk sendiri? Minta agen Anda menyelidikinya menggunakan REA. REA dapat memeriksa aplikasi tanpa kode sumbernya, menjelaskan cara kerja fitur tersebut, menunjukkan bukti, dan membangun versi untuk proyek Anda.
+REA membantu peneliti keamanan, analis malware, pemain CTF, dan pengembang memahami perangkat lunak terkompilasi melalui agen mereka. Arahkan agen Anda ke biner, aplikasi, atau rekaman yang diizinkan untuk Anda analisis; REA memeriksanya tanpa kode sumber, menjelaskan perilakunya, dan menunjukkan bukti di balik setiap kesimpulan.
 
 REA menghubungkan agen Anda dengan berbagai alat untuk memeriksa biner native, aplikasi JavaScript dan Electron, assembly .NET, serta situs web. Anda juga dapat menggunakan alat yang sama dari terminal. Analisis dijalankan secara lokal, dan hasilnya mencakup bukti serta keterbatasan yang mendasari setiap kesimpulan.
 
 Proses penyiapan mendaftarkan REA ke agen Anda dan memasang instruksi alur kerja yang sesuai. Analisis native dapat menggunakan instalasi Hopper, Ghidra, atau IDA yang sudah ada. Proses penyiapan juga dapat memasang Hopper secara opsional setelah mendapatkan persetujuan. Analisis JavaScript statis tidak memerlukan mesin analisis native.
 
 > **[Kunjungi situs web REA](https://rea.tools/id/)** untuk mendapatkan petunjuk penyiapan, panduan bergambar, dan studi kasus nyata.
+
+## Penggunaan yang Bertanggung Jawab
+
+REA dibuat untuk analisis yang sah: riset keamanan, analisis malware dan insiden, riset kerentanan dan pengungkapan terkoordinasi, CTF dan pendidikan, interoperabilitas, pelestarian perangkat lunak, serta debugging atau audit perangkat lunak yang Anda miliki atau yang diizinkan untuk Anda periksa.
+
+Proyek REA tidak mendukung, dan tidak akan membantu, hal-hal berikut:
+
+- mengakali DRM, pemeriksaan lisensi, sistem anti-cheat, atau langkah perlindungan teknis lainnya;
+- mengembangkan cheat game atau memanipulasi layanan online;
+- melewati autentikasi, perlindungan bot, atau kontrol akses pada sistem yang tidak diizinkan untuk Anda uji;
+- menyalin perangkat lunak berpemilik atau mereproduksi kode dan aset yang dilindunginya;
+- menghindari kebijakan penggunaan atau langkah keamanan penyedia model AI;
+- menjual kembali atau membagikan akun AI atau akses API.
+
+Anda bertanggung jawab untuk memperoleh otorisasi yang diperlukan dan mematuhi hukum, perjanjian lisensi, serta ketentuan layanan yang berlaku. Rekayasa balik mungkin dibatasi di yurisdiksi Anda atau oleh lisensi perangkat lunak yang Anda analisis.
+
+Permintaan bantuan untuk penggunaan di atas akan ditutup tanpa tanggapan di issue dan diskusi, dan dapat berujung pada pengeluaran dari komunitas REA.
 
 ## Mulai Cepat
 
@@ -72,10 +89,11 @@ Penyiapan mendukung Claude Code, Codex, Cursor, Gemini CLI, Grok Build, dan [age
 ### Minta agen Anda
 
 ```text
-Pahami cara kerja pencarian di aplikasi Notes, tunjukkan buktinya, dan buat fitur serupa untuk proyek saya.
+Build rilis aplikasi saya crash saat dijalankan, tetapi build debug tidak.
+Periksa ./build/MyApp, temukan titik perbedaan kedua build, dan tunjukkan buktinya.
 ```
 
-Ganti Notes dengan aplikasi target dan fitur yang ingin Anda pahami.
+Arahkan agen Anda ke target yang diizinkan untuk Anda analisis dan jelaskan apa yang ingin Anda pahami.
 
 ### Gunakan terminal
 
@@ -297,7 +315,7 @@ Terima kasih kepada semua orang yang menggunakan REA, melaporkan bug, meminta fi
 
 ## Penafian
 
-REA menyediakan alat untuk penelitian, analisis, dan rekonstruksi rekayasa balik yang sah. Anda bertanggung jawab untuk memperoleh otorisasi yang diperlukan dan mematuhi hukum yang berlaku. Proyek ini tidak mendukung penggunaan ilegal atau tanpa izin.
+Lihat [Penggunaan yang Bertanggung Jawab](#penggunaan-yang-bertanggung-jawab).
 
 REA adalah proyek perangkat lunak sumber terbuka. Kami tidak menerbitkan atau mendukung mata uang kripto maupun token apa pun. Token yang menggunakan nama REA tidak berafiliasi dengan proyek ini.
 

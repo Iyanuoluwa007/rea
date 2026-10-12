@@ -6,7 +6,7 @@
 
 ### Un seul MCP pour la rétro-ingénierie des binaires, des applications et du comportement à l'exécution.
 
-**Repérez une fonctionnalité qui vous plaît. Comprenez son fonctionnement, jusqu'au niveau du binaire.**
+**Comprenez le fonctionnement des logiciels, jusqu'au niveau du binaire — pour la recherche en sécurité, l'interopérabilité et les logiciels que vous êtes autorisé à analyser.**
 
 [![npm version](https://img.shields.io/npm/v/rea-agents?style=flat-square&color=cb3837)](https://www.npmjs.com/package/rea-agents)
 [![MCP tool catalog](https://img.shields.io/badge/MCP-tool_catalog-5c4ee5?style=flat-square)](docs/mcp-contracts.md#generated-catalog)
@@ -47,13 +47,30 @@
 
 ---
 
-Vous avez repéré dans une application une fonctionnalité que vous aimeriez avoir dans votre propre produit ? Demandez à votre agent de l'étudier avec REA. Il peut inspecter l'application sans son code source, expliquer le fonctionnement de la fonctionnalité, présenter les preuves et en construire une version pour votre projet.
+REA aide les chercheurs en sécurité, les analystes de logiciels malveillants, les joueurs de CTF et les développeurs à comprendre des logiciels compilés grâce à leurs agents. Confiez à votre agent un binaire, une application ou une capture que vous êtes autorisé à analyser ; REA l'inspecte sans code source, explique son comportement et présente les preuves sur lesquelles repose chaque conclusion.
 
 REA connecte votre agent à des outils d'inspection de binaires natifs, d'applications JavaScript et Electron, d'assemblys .NET et de sites web. Les mêmes outils sont aussi disponibles depuis votre terminal. L'analyse s'exécute localement, et chaque conclusion s'accompagne des preuves et des limites sur lesquelles elle repose.
 
 Setup enregistre REA auprès de votre agent et installe les instructions de workflow correspondantes. L'analyse native peut utiliser une installation existante de Hopper, de Ghidra ou d'IDA ; Setup peut aussi installer Hopper après votre accord. L'analyse statique JavaScript ne nécessite aucun moteur d'analyse natif.
 
 > **[Visitez le site web de REA](https://rea.tools/fr/)** pour les instructions d'installation, des guides illustrés et des études de cas réelles.
+
+## Utilisation responsable
+
+REA est conçu pour l'analyse licite : recherche en sécurité, analyse de logiciels malveillants et d'incidents, recherche de vulnérabilités et divulgation coordonnée, CTF et enseignement, interopérabilité, préservation des logiciels, ainsi que débogage ou audit de logiciels qui vous appartiennent ou que vous êtes autorisé à examiner.
+
+Le projet REA ne soutient pas les usages suivants et n'y apportera aucune aide :
+
+- contourner des DRM, des vérifications de licence, des systèmes anti-triche ou d'autres mesures techniques de protection ;
+- développer des triches pour des jeux ou altérer des services en ligne ;
+- contourner l'authentification, la protection contre les bots ou les contrôles d'accès de systèmes que vous n'êtes pas autorisé à tester ;
+- copier des logiciels propriétaires ou reproduire leur code et leurs ressources protégés ;
+- échapper aux politiques d'utilisation ou aux mesures de sécurité des fournisseurs de modèles d'IA ;
+- revendre ou partager des comptes d'IA ou des accès à des API.
+
+Il vous appartient d'obtenir toute autorisation nécessaire et de respecter les lois, les contrats de licence et les conditions d'utilisation applicables. La rétro-ingénierie peut être restreinte dans votre juridiction ou par la licence du logiciel que vous analysez.
+
+Les demandes d'aide pour les usages ci-dessus seront fermées sans réponse dans les issues et les discussions, et peuvent entraîner l'exclusion de la communauté REA.
 
 ## Démarrage rapide
 
@@ -72,11 +89,11 @@ Setup prend en charge Claude Code, Codex, Cursor, Gemini CLI, Grok Build et [d'a
 ### Interroger votre agent
 
 ```text
-Comprends comment fonctionne la recherche dans l'app Notes, montre-moi les preuves
-et construis une fonctionnalité similaire pour mon projet.
+La version release de mon app plante au démarrage, mais pas la version debug.
+Inspecte ./build/MyApp, trouve où les deux builds divergent et montre-moi les preuves.
 ```
 
-Remplacez Notes par votre application cible et la fonctionnalité que vous voulez comprendre.
+Confiez à votre agent une cible que vous êtes autorisé à analyser et décrivez ce que vous voulez comprendre.
 
 ### Utiliser le terminal
 
@@ -276,7 +293,7 @@ Merci à toutes les personnes qui utilisent REA, signalent des bugs, proposent d
 
 ## Avertissement
 
-REA fournit des outils destinés à la recherche, à l'analyse et à la reconstruction légales en rétro-ingénierie. Il vous appartient d'obtenir toute autorisation nécessaire et de respecter les lois applicables. Le projet n'encourage aucune utilisation illégale ou non autorisée.
+Voir [Utilisation responsable](#utilisation-responsable).
 
 ## Contribuer
 

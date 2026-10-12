@@ -6,7 +6,7 @@
 
 ### İkili dosyaların, uygulamaların ve çalışma zamanı davranışının tersine mühendisliği için tek bir MCP.
 
-**Beğendiğiniz bir özellik mi gördünüz? İkili kod düzeyine kadar nasıl çalıştığını anlayın.**
+**Yazılımın nasıl çalıştığını ikili kod düzeyine kadar anlayın — güvenlik araştırmaları, birlikte çalışabilirlik ve analiz etme yetkiniz olan yazılımlar için.**
 
 [![npm version](https://img.shields.io/npm/v/rea-agents?style=flat-square&color=cb3837)](https://www.npmjs.com/package/rea-agents)
 [![MCP tool catalog](https://img.shields.io/badge/MCP-tool_catalog-5c4ee5?style=flat-square)](docs/mcp-contracts.md#generated-catalog)
@@ -47,13 +47,30 @@
 
 ---
 
-Bir uygulamada kendi ürününüze eklemek istediğiniz bir özellik mi gördünüz? Ajanınızdan REA ile araştırmasını isteyin. Kaynak kodu olmadan uygulamayı inceleyebilir, özelliğin nasıl çalıştığını açıklayabilir, kanıtları gösterebilir ve projenize uygun bir sürümünü geliştirebilir.
+REA; güvenlik araştırmacılarının, kötü amaçlı yazılım analistlerinin, CTF oyuncularının ve geliştiricilerin derlenmiş yazılımları ajanları aracılığıyla anlamasına yardımcı olur. Ajanınızı analiz etme yetkiniz olan bir ikili dosyaya, uygulamaya veya yakalamaya yönlendirin; REA onu kaynak kodu olmadan inceler, davranışını açıklar ve her sonucun dayandığı kanıtları gösterir.
 
 REA, ajanınızı yerel makine kodu içeren ikili dosyaları, JavaScript ve Electron uygulamalarını, .NET derlemelerini ve web sitelerini inceleyen araçlara bağlar. Aynı araçları terminalden de kullanabilirsiniz. Analiz yerel olarak çalışır; sonuçlar her çıkarımın dayandığı kanıtları ve sınırlamaları içerir.
 
 Kurulum, REA'yı ajanınıza kaydeder ve uyumlu iş akışı talimatlarını yükler. Yerel makine kodu analizi mevcut bir Hopper veya Ghidra kurulumunu kullanabilir; kurulum işlemi, onayınızla isteğe bağlı olarak Hopper da yükleyebilir. Statik JavaScript analizi bu iki motora da ihtiyaç duymaz.
 
 > Kurulum talimatları, görselli rehberler ve gerçek örnek çalışmalar için **[REA web sitesini ziyaret edin](https://rea.tools/tr/)**.
+
+## Sorumlu kullanım
+
+REA yasal analiz için tasarlanmıştır: güvenlik araştırmaları, kötü amaçlı yazılım ve olay analizi, güvenlik açığı araştırması ve koordineli açıklama, CTF'ler ve eğitim, birlikte çalışabilirlik, yazılımların korunması ve sahibi olduğunuz ya da inceleme yetkiniz olan yazılımlarda hata ayıklama veya denetim.
+
+REA projesi aşağıdakileri desteklemez ve bunlara yardım etmez:
+
+- DRM'yi, lisans denetimlerini, hile önleme sistemlerini veya diğer teknik koruma önlemlerini atlatmak;
+- oyun hileleri geliştirmek veya çevrim içi hizmetlere müdahale etmek;
+- test etme yetkiniz olmayan sistemlerde kimlik doğrulamayı, bot korumasını veya erişim denetimlerini aşmak;
+- tescilli yazılımları kopyalamak veya korunan kodlarını ve varlıklarını yeniden üretmek;
+- yapay zekâ modeli sağlayıcılarının kullanım politikalarından veya güvenlik önlemlerinden kaçmak;
+- yapay zekâ hesaplarını veya API erişimini yeniden satmak ya da paylaşmak.
+
+Gerekli izinleri almak ve geçerli yasalara, lisans sözleşmelerine ve hizmet şartlarına uymak sizin sorumluluğunuzdadır. Tersine mühendislik, bulunduğunuz yargı bölgesinde veya analiz ettiğiniz yazılımın lisansı tarafından kısıtlanmış olabilir.
+
+Yukarıdaki kullanımlar için yardım talepleri, issue'larda ve tartışmalarda yanıt verilmeden kapatılır ve REA topluluğundan çıkarılmaya yol açabilir.
 
 ## Hızlı başlangıç
 
@@ -72,10 +89,11 @@ Kurulum Claude Code, Codex, Cursor, Gemini CLI, Grok Build ve [diğer ajanları]
 ### Ajanınıza sorun
 
 ```text
-Notes uygulamasında aramanın nasıl çalıştığını araştır, kanıtları göster ve projem için benzer bir özellik geliştir.
+Uygulamamın release derlemesi açılışta çöküyor ama debug derlemesi çökmüyor.
+./build/MyApp dosyasını incele, iki derlemenin nerede ayrıştığını bul ve kanıtları göster.
 ```
 
-Notes yerine hedef uygulamanızı ve anlamak istediğiniz özelliği belirtin.
+Ajanınızı analiz etme yetkiniz olan bir hedefe yönlendirin ve neyi anlamak istediğinizi açıklayın.
 
 ### Terminali kullanın
 
@@ -272,7 +290,7 @@ REA'yı kullanan, hata bildiren, özellik talep eden, derlemeleri test eden ve d
 
 ## Sorumluluk reddi
 
-REA, yasal tersine mühendislik araştırması, analizi ve yeniden oluşturma için araçlar sağlar. Gerekli izinleri almak ve geçerli yasalara uymak sizin sorumluluğunuzdadır. Proje yasa dışı veya yetkisiz kullanımı desteklemez.
+Bkz. [Sorumlu kullanım](#sorumlu-kullanım).
 
 ## Katkıda bulunma
 

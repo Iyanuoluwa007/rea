@@ -6,7 +6,7 @@
 
 ### Un unico MCP per l'ingegneria inversa su binari, applicazioni e comportamento a runtime.
 
-**Vedi una funzionalità che ti piace. Capisci come funziona, fino al livello binario.**
+**Capisci come funziona il software, fino al livello binario — per la ricerca sulla sicurezza, l'interoperabilità e il software che sei autorizzato ad analizzare.**
 
 [![npm version](https://img.shields.io/npm/v/rea-agents?style=flat-square&color=cb3837)](https://www.npmjs.com/package/rea-agents)
 [![MCP tool catalog](https://img.shields.io/badge/MCP-tool_catalog-5c4ee5?style=flat-square)](docs/mcp-contracts.md#generated-catalog)
@@ -47,13 +47,30 @@
 
 ---
 
-Hai visto una funzionalità in un'app che vorresti nel tuo prodotto? Chiedi al tuo agente di analizzarla con REA. Può ispezionare l'app senza il suo codice sorgente, spiegare come funziona la funzionalità, mostrare le prove e realizzare una versione per il tuo progetto.
+REA aiuta ricercatori di sicurezza, analisti di malware, giocatori di CTF e sviluppatori a capire il software compilato attraverso i loro agenti. Indirizza il tuo agente verso un binario, un'applicazione o un'acquisizione che sei autorizzato ad analizzare; REA lo ispeziona senza codice sorgente, ne spiega il comportamento e mostra le prove alla base di ogni conclusione.
 
 REA collega il tuo agente a strumenti per ispezionare binari nativi, app JavaScript ed Electron, assembly .NET e siti web. Puoi usare gli stessi strumenti anche dal terminale. L'analisi viene eseguita localmente e i risultati includono le prove e i limiti dietro ogni conclusione.
 
 La configurazione registra REA con il tuo agente e installa le istruzioni di workflow corrispondenti. L'analisi nativa può usare un'installazione esistente di Hopper, Ghidra o IDA; la configurazione può installare opzionalmente Hopper previa approvazione. L'analisi statica JavaScript non richiede alcun motore di analisi nativo.
 
 > **[Visita il sito web di REA](https://rea.tools/it/)** per istruzioni di configurazione, guide illustrate e veri casi studio.
+
+## Uso responsabile
+
+REA è pensato per l'analisi lecita: ricerca sulla sicurezza, analisi di malware e incidenti, ricerca di vulnerabilità e divulgazione coordinata, CTF e formazione, interoperabilità, conservazione del software, e debugging o audit di software che possiedi o che sei autorizzato a esaminare.
+
+Il progetto REA non supporta i seguenti usi e non fornirà aiuto per:
+
+- aggirare DRM, controlli di licenza, sistemi anti-cheat o altre misure tecniche di protezione;
+- sviluppare cheat per videogiochi o manomettere servizi online;
+- eludere autenticazione, protezioni anti-bot o controlli di accesso su sistemi che non sei autorizzato a testare;
+- copiare software proprietario o riprodurne il codice e gli asset protetti;
+- eludere le politiche d'uso o le misure di sicurezza dei fornitori di modelli di IA;
+- rivendere o condividere account di IA o accessi API.
+
+Sei responsabile di ottenere le eventuali autorizzazioni richieste e di rispettare le leggi, i contratti di licenza e i termini di servizio applicabili. L'ingegneria inversa può essere limitata nella tua giurisdizione o dalla licenza del software che analizzi.
+
+Le richieste di aiuto per gli usi sopra elencati verranno chiuse senza risposta nelle issue e nelle discussioni e possono comportare l'allontanamento dalla community di REA.
 
 ## Avvio rapido
 
@@ -72,11 +89,11 @@ La configurazione supporta Claude Code, Codex, Cursor, Gemini CLI, Grok Build e 
 ### Chiedi al tuo agente
 
 ```text
-Spiega come funziona la ricerca nell'app Note, mostrami le prove e realizza
-una funzionalità simile per il mio progetto.
+La build di release della mia app va in crash all'avvio, ma la build di debug no.
+Ispeziona ./build/MyApp, trova dove le due build divergono e mostrami le prove.
 ```
 
-Sostituisci Note con la tua app di destinazione e la funzionalità che vuoi capire.
+Indirizza il tuo agente verso un obiettivo che sei autorizzato ad analizzare e descrivi cosa vuoi capire.
 
 ### Usa il terminale
 
@@ -276,7 +293,7 @@ Grazie a tutti coloro che usano REA, segnalano bug, propongono funzionalità, te
 
 ## Disclaimer
 
-REA fornisce strumenti per la ricerca, l'analisi e la ricostruzione di ingegneria inversa lecita. Sei responsabile di ottenere le eventuali autorizzazioni richieste e di rispettare le leggi applicabili. Il progetto non approva l'uso illegale o non autorizzato.
+Vedi [Uso responsabile](#uso-responsabile).
 
 REA è un progetto software open-source. Non abbiamo emesso né approvato alcuna criptovaluta o token. I token che usano il nome REA non sono affiliati al progetto.
 
