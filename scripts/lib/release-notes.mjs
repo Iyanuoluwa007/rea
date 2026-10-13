@@ -368,6 +368,7 @@ export function verifyReleaseNotes(raw, text, body) {
 const VERSION_ONLY_PLUGIN_METADATA = new Set([
   ".claude-plugin/plugin.json",
   ".codex-plugin/plugin.json",
+  ".mcp.json",
   ".claude-plugin/marketplace.json",
   ".agents/plugins/marketplace.json",
 ]);
@@ -390,10 +391,9 @@ function pluginMetadataWithoutVersions(path, text) {
   }
   if ("version" in manifest) manifest.version = "";
   const launch = manifest.mcpServers?.rea?.args;
-  // Only the version after the last "@" is release-owned; a different package
-  // name changes what the plugin runs.
-  if (Array.isArray(launch) && typeof launch[1] === "string")
-    launch[1] = launch[1].replace(/@[^@/]*$/u, "@");
+  // Only the scalar pinned version is release-owned; the launcher owns the
+  // fixed package name and the executable/path remain product behavior.
+  if (Array.isArray(launch) && typeof launch[1] === "string") launch[1] = "";
   return JSON.stringify(manifest);
 }
 

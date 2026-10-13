@@ -47,6 +47,7 @@ const pluginManifests = [
   ".claude-plugin/plugin.json",
   ".codex-plugin/plugin.json",
 ] as const;
+const pluginServerConfig = ".mcp.json";
 
 const pluginMarketplaces = [
   ".claude-plugin/marketplace.json",
@@ -58,14 +59,42 @@ const pluginMarketplace = (version: string, packageName = "rea-agents") => ({
   ],
 });
 
+const pluginServer = (version: string, command = "node") => ({
+  mcpServers: {
+    rea: {
+      command,
+      args: ["./scripts/plugin-mcp-launcher.mjs", version],
+      startup_timeout_sec: 30,
+    },
+  },
+});
+
 const pluginManifest = (
   version: string,
-  { skills = ["./skill"], packageName = "rea-agents" } = {},
+  { skills = ["./skill"], command = "node" } = {},
 ) => ({
   version,
   skills,
-  mcpServers: { rea: { args: ["-y", `${packageName}@${version}`, "mcp"] } },
+  mcpServers: {
+    rea: {
+      command,
+      args: ["${CLAUDE_PLUGIN_ROOT}/scripts/plugin-mcp-launcher.mjs", version],
+    },
+  },
 });
+
+const pluginManifestFor = (
+  path: (typeof pluginManifests)[number],
+  version: string,
+  options: { skills?: string[]; command?: string } = {},
+) =>
+  path === ".codex-plugin/plugin.json"
+    ? {
+        version,
+        skills: options.skills ?? ["./skill"],
+        mcpServers: "./.mcp.json",
+      }
+    : pluginManifest(version, options);
 
 beforeAll(async () => {
   const workspace = await createTestWorkspace("rea-release-notes-seed-");
@@ -86,9 +115,13 @@ beforeAll(async () => {
     await mkdir(join(directory, dirname(path)), { recursive: true });
     await writeFile(
       join(directory, path),
-      JSON.stringify(pluginManifest("6.3.0")),
+      JSON.stringify(pluginManifestFor(path, "6.3.0")),
     );
   }
+  await writeFile(
+    join(directory, pluginServerConfig),
+    JSON.stringify(pluginServer("6.3.0")),
+  );
   for (const path of pluginMarketplaces) {
     await mkdir(join(directory, dirname(path)), { recursive: true });
     await writeFile(
@@ -409,8 +442,12 @@ it("binds publication to complete recorded history and the reviewed base", async
   for (const path of pluginManifests)
     await writeFile(
       join(f.directory, path),
-      JSON.stringify(pluginManifest("6.4.0")),
+      JSON.stringify(pluginManifestFor(path, "6.4.0")),
     );
+  await writeFile(
+    join(f.directory, pluginServerConfig),
+    JSON.stringify(pluginServer("6.4.0")),
+  );
   for (const path of pluginMarketplaces)
     await writeFile(
       join(f.directory, path),
@@ -420,6 +457,7 @@ it("binds publication to complete recorded history and the reviewed base", async
     "add",
     "CHANGELOG.md",
     ...pluginManifests,
+    pluginServerConfig,
     ...pluginMarketplaces,
   ]);
   await git(f.directory, ["commit", "-m", "chore: release notes"]);
@@ -445,23 +483,42 @@ it("binds publication to complete recorded history and the reviewed base", async
   });
 });
 
-it.each(
-  pluginManifests.flatMap((path) => [
-    { path, change: "the skill path", edit: { skills: ["./another-skill"] } },
-    {
-      path,
-      change: "the launched package",
-      edit: { packageName: "another-package" },
-    },
-  ]),
-)(
-  "treats a release that changes $change in $path as a product change",
-  async ({ path, edit }) => {
+it.each(pluginManifests)(
+  "treats a release that changes the skill path in %s as a product change",
+  async (path) => {
     const f = await fixture();
     await writeFile(
       join(f.directory, path),
-      JSON.stringify(pluginManifest("6.4.0", edit)),
+      JSON.stringify(
+        pluginManifestFor(path, "6.4.0", { skills: ["./another-skill"] }),
+      ),
     );
+    await git(f.directory, ["add", "CHANGELOG.md", path]);
+    await git(f.directory, ["commit", "-m", "chore: release notes"]);
+    await expect(
+      f.invoke(["check", "--manifest", f.manifest, "--source", "HEAD"]),
+    ).rejects.toMatchObject({
+      stderr: expect.stringContaining(
+        `Product changed after notes target; regenerate inventory: ${path}`,
+      ),
+    });
+  },
+);
+
+it.each([
+  {
+    path: ".claude-plugin/plugin.json",
+    content: pluginManifest("6.4.0", { command: "other-launcher" }),
+  },
+  {
+    path: pluginServerConfig,
+    content: pluginServer("6.4.0", "other-launcher"),
+  },
+])(
+  "keeps launcher behavior in $path outside version-only metadata",
+  async ({ path, content }) => {
+    const f = await fixture();
+    await writeFile(join(f.directory, path), JSON.stringify(content));
     await git(f.directory, ["add", "CHANGELOG.md", path]);
     await git(f.directory, ["commit", "-m", "chore: release notes"]);
     await expect(

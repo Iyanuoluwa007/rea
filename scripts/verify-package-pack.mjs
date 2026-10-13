@@ -73,25 +73,20 @@ export async function verifyPackagePack({ root, workspace }) {
     );
     const serverConfig = path.startsWith(".codex")
       ? JSON.parse(
-          (
-            await exec("tar", [
-              "-xOf",
-              tarball,
-              "package/.mcp.json",
-            ])
-          ).stdout,
+          (await exec("tar", ["-xOf", tarball, "package/.mcp.json"])).stdout,
         )
       : manifest;
     const expectedArgs = [
       `${path.startsWith(".claude") ? "${CLAUDE_PLUGIN_ROOT}/" : "./"}scripts/plugin-mcp-launcher.mjs`,
-      `${packedManifest.name}@${packedManifest.version}`,
+      packedManifest.version,
     ];
     if (
       manifest.version !== packedManifest.version ||
       manifest.skills !== "./skills" ||
       (path.startsWith(".codex")
         ? manifest.mcpServers !== "./.mcp.json" ||
-          serverConfig.mcpServers?.rea?.cwd !== "."
+          serverConfig.mcpServers?.rea?.cwd !== "." ||
+          serverConfig.mcpServers?.rea?.startup_timeout_sec !== 30
         : false) ||
       serverConfig.mcpServers?.rea?.command !== "node" ||
       JSON.stringify(serverConfig.mcpServers?.rea?.args) !==
@@ -105,7 +100,9 @@ export async function verifyPackagePack({ root, workspace }) {
     throw new Error("Packaged Codex MCP server declaration is missing");
   for (const path of [
     "scripts/plugin-mcp-launcher.mjs",
-    "scripts/lib/packageRunnerCommand.mjs",
+    "src/application/PackageRunnerCommand.mjs",
+    "src/application/PackageRunnerCommand.d.mts",
+    "dist/application/PackageRunnerCommand.mjs",
   ])
     if (!packedFiles.includes(`package/${path}`))
       throw new Error(

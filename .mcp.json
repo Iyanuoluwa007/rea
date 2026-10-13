@@ -2,11 +2,9 @@
   "mcpServers": {
     "rea": {
       "command": "node",
-      "args": [
-        "./scripts/plugin-mcp-launcher.mjs",
-        "rea-agents@6.4.0"
-      ],
-      "cwd": "."
+      "args": ["./scripts/plugin-mcp-launcher.mjs", "6.4.0"],
+      "cwd": ".",
+      "startup_timeout_sec": 30
     }
   }
 }

@@ -195,7 +195,7 @@ describe("plugin manifests", () => {
       });
   });
 
-  it.each(pluginManifests)(
+  it.each([...pluginManifests, pluginServerConfig])(
     "pins the plugin manifest %s and Codex's server config path",
     async (path) => {
       const packageJson = (await readJson("package.json")) as {
@@ -251,7 +251,12 @@ describe("plugin manifests", () => {
     expect(updatedJson.get(".claude-plugin/plugin.json")).toMatchObject({
       version: nextVersion,
       mcpServers: {
-        rea: { args: ["-y", `rea-agents@${nextVersion}`, "mcp"] },
+        rea: {
+          args: [
+            "${CLAUDE_PLUGIN_ROOT}/scripts/plugin-mcp-launcher.mjs",
+            nextVersion,
+          ],
+        },
       },
     });
     expect(updatedJson.get(".codex-plugin/plugin.json")).toMatchObject({
@@ -259,7 +264,10 @@ describe("plugin manifests", () => {
     });
     expect(updatedJson.get(pluginServerConfig)).toMatchObject({
       mcpServers: {
-        rea: { args: ["-y", `rea-agents@${nextVersion}`, "mcp"] },
+        rea: {
+          args: ["./scripts/plugin-mcp-launcher.mjs", nextVersion],
+          startup_timeout_sec: 30,
+        },
       },
     });
     for (const path of [
@@ -281,7 +289,6 @@ describe("plugin manifests", () => {
 
   it("pins the plugin server launch from the shared MCP declaration", async () => {
     const packageJson = (await readJson("package.json")) as {
-      name: string;
       version: string;
     };
 
@@ -289,10 +296,7 @@ describe("plugin manifests", () => {
       mcpServers: {
         rea: {
           command: "node",
-          args: [
-            "./scripts/plugin-mcp-launcher.mjs",
-            `${packageJson.name}@${packageJson.version}`,
-          ],
+          args: ["./scripts/plugin-mcp-launcher.mjs", packageJson.version],
           cwd: ".",
         },
       },
@@ -332,8 +336,8 @@ describe("plugin manifests", () => {
     );
   });
 
-  it("carries the owned Codex startup timeout in the Codex plugin server entry", async () => {
-    expect(await readJson(".codex-plugin/plugin.json")).toMatchObject({
+  it("carries the owned Codex startup timeout in the companion server entry", async () => {
+    expect(await readJson(pluginServerConfig)).toMatchObject({
       mcpServers: {
         rea: {
           startup_timeout_sec: MCP_STARTUP_POLICY.codexStartupTimeoutSeconds,

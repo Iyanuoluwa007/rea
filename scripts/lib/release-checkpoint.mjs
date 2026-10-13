@@ -8,10 +8,31 @@ const PLUGIN_MANIFEST_PATHS = [
   ".claude-plugin/plugin.json",
   ".codex-plugin/plugin.json",
 ];
-const PLUGIN_PACKAGE_NAME = "rea-agents";
-const pluginManifestSchema = versionSchema.extend({
+const inlinePluginManifestSchema = versionSchema.extend({
   mcpServers: z.object({
-    rea: z.object({ args: z.array(z.string()) }),
+    rea: z.object({
+      command: z.literal("node"),
+      args: z.tuple([
+        z.literal("${CLAUDE_PLUGIN_ROOT}/scripts/plugin-mcp-launcher.mjs"),
+        z.string(),
+      ]),
+    }),
+  }),
+});
+const codexPluginManifestSchema = versionSchema.extend({
+  mcpServers: z.literal("./.mcp.json"),
+});
+const codexServerConfigSchema = z.object({
+  mcpServers: z.object({
+    rea: z.object({
+      command: z.literal("node"),
+      args: z.tuple([
+        z.literal("./scripts/plugin-mcp-launcher.mjs"),
+        z.string(),
+      ]),
+      cwd: z.literal("."),
+      startup_timeout_sec: z.number().int().positive(),
+    }),
   }),
 });
 const sectionsSchema = z.object({
@@ -203,9 +224,16 @@ async function validateCandidate(git, sha, version, commits) {
   // previous server, so both are version authority like server.json.
   const launches = [];
   for (const path of PLUGIN_MANIFEST_PATHS) {
-    const manifest = await readJson(git, sha, path, pluginManifestSchema);
+    const manifest =
+      path === ".codex-plugin/plugin.json"
+        ? await readJson(git, sha, path, codexPluginManifestSchema)
+        : await readJson(git, sha, path, inlinePluginManifestSchema);
     versions.push([path, manifest.version]);
-    launches.push([path, manifest.mcpServers.rea.args[1]]);
+    const server =
+      path === ".codex-plugin/plugin.json"
+        ? await readJson(git, sha, ".mcp.json", codexServerConfigSchema)
+        : manifest;
+    launches.push([path, server.mcpServers.rea.args[1]]);
   }
   // Catalogs are generated and checked from this candidate by the release job;
   // they are not version authority stored in the immutable source tree.
@@ -228,13 +256,13 @@ async function validateCandidate(git, sha, version, commits) {
       );
     }
   }
-  // Compare the whole specifier: a bare version would make npx fetch a
-  // package named after the release number.
-  const requiredLaunch = `${PLUGIN_PACKAGE_NAME}@${version}`;
+  // Plugin JSON stores only a scalar version. The launcher owns the fixed
+  // package name and constructs the complete registry specifier at runtime.
+  const requiredLaunch = version;
   for (const [location, launched] of launches) {
     if (launched !== requiredLaunch) {
       throw new Error(
-        `${location}@${sha} launches ${launched ?? "no package"}; release branch requires ${requiredLaunch}.`,
+        `${location}@${sha} launches version ${launched ?? "no version"}; release branch requires ${requiredLaunch}.`,
       );
     }
   }
