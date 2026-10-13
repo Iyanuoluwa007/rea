@@ -222,13 +222,15 @@ describe("plugin manifests", () => {
       });
     },
   );
+});
 
+describe("plugin release pins", () => {
   it("advances every plugin pin through Release Please JSON extra-files", async () => {
     const packageJson = (await readJson("package.json")) as {
       version: string;
     };
-    const [major, minor] = packageJson.version.split(".").map(Number);
-    const nextVersion = `${major}.${minor + 1}.0`;
+    const currentVersion = Version.parse(packageJson.version);
+    const nextVersion = `${currentVersion.major}.${currentVersion.minor + 1}.0`;
     const version = Version.parse(nextVersion);
     const config = (await readJson("release-please-config.json")) as {
       packages: {
