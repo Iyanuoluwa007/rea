@@ -18,13 +18,13 @@
   "skills": "./skills",
   "mcpServers": {
     "rea": {
-      "command": "npx",
+      "command": "node",
       "args": [
-        "-y",
-        "rea-agents@6.4.0",
-        "mcp"
+        "./scripts/plugin-mcp-launcher.mjs",
+        "rea-agents@6.4.0"
       ],
-      "startup_timeout_sec": 30
+      "startup_timeout_sec": 30,
+      "cwd": "."
     }
   },
   "interface": {

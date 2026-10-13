@@ -70,17 +70,26 @@ export async function verifyPackagePack({ root, workspace }) {
     if (
       manifest.version !== packedManifest.version ||
       manifest.skills !== "./skills" ||
+      manifest.mcpServers?.rea?.command !== "node" ||
+      (path.startsWith(".codex") && manifest.mcpServers?.rea?.cwd !== ".") ||
       JSON.stringify(manifest.mcpServers?.rea?.args) !==
         JSON.stringify([
-          "-y",
+          `${path.startsWith(".claude") ? "${CLAUDE_PLUGIN_ROOT}/" : "./"}scripts/plugin-mcp-launcher.mjs`,
           `${packedManifest.name}@${packedManifest.version}`,
-          "mcp",
         ])
     )
       throw new Error(
         `Packaged plugin ${path} does not match the exact runtime and canonical skill release`,
       );
   }
+  for (const path of [
+    "scripts/plugin-mcp-launcher.mjs",
+    "src/process/packageRunnerCommand.mjs",
+  ])
+    if (!packedFiles.includes(`package/${path}`))
+      throw new Error(
+        `Packaged plugin launcher dependency is missing: ${path}`,
+      );
   if (
     skill.includes(`${packedManifest.name}@latest`) ||
     !skill.includes(`${packedManifest.name}@${packedManifest.version}`)

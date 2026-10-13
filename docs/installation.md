@@ -785,8 +785,14 @@ Ghidra/JDK installation; neither is inferred from startup alone.
 
 REA's npm package is the shared Claude Code and Codex plugin artifact. It
 contains `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and the
-canonical generated `skills/` tree. Both manifests select `./skills` and pin
-the stdio MCP server to that exact package version. The existing release skill
+canonical generated `skills/` tree. Both manifests select `./skills` and run a plain Node bootstrap pinned to
+that exact package version. The client must have a supported standalone `node`
+on its PATH. Claude expands its documented `CLAUDE_PLUGIN_ROOT` in the script
+argument; Codex resolves `cwd: "."` from the installed plugin root before
+launching the relative script. The shared bootstrap preserves the pinned
+package-runner arguments and stdio, handles Windows npm shims, and uses an owned
+empty working directory so an unbuilt local checkout cannot shadow the exact
+registry release. The existing release skill
 generator also pins CLI recovery commands to the same version.
 
 The repository's single-plugin marketplaces are declared in

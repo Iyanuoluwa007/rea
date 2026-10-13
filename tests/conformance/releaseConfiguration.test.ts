@@ -197,8 +197,12 @@ describe("plugin manifests", () => {
         version: packageJson.version,
         mcpServers: {
           rea: {
-            command: "npx",
-            args: ["-y", `${packageJson.name}@${packageJson.version}`, "mcp"],
+            command: "node",
+            args: [
+              `${path.startsWith(".claude") ? "${CLAUDE_PLUGIN_ROOT}/" : "./"}scripts/plugin-mcp-launcher.mjs`,
+              `${packageJson.name}@${packageJson.version}`,
+            ],
+            ...(path.startsWith(".codex") ? { cwd: "." } : {}),
           },
         },
       });
