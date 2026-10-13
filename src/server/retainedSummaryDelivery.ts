@@ -1,3 +1,5 @@
+import { analysisDetailSchema } from "../contracts/analysisDetail.js";
+
 import type { EvidenceWriter } from "../application/investigation/InvestigationRecordPort.js";
 import type { EvidenceLookup } from "../application/EvidenceInputResolver.js";
 import {
@@ -57,6 +59,7 @@ export const withoutDeliveryDetail =
   (operations: ReadonlySet<string>) =>
   (operation: string, parameters: Parameters): Parameters => {
     if (!operations.has(operation)) return parameters;
+    analysisDetailSchema.unwrap().optional().parse(parameters.detail);
     const { detail: _detail, ...selected } = parameters;
     return selected;
   };

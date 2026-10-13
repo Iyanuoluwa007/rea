@@ -67,6 +67,14 @@ mcpTest(
     const app = await fixtureApp();
     const client = await openProductionTarget(mcp, onTestFinished, app);
 
+    const invalidDetail = await client.callTool({
+      name: "decode_interface_builder",
+      arguments: { detail: "brief" },
+    });
+    expect(parseMcpToolError(invalidDetail)).toMatchObject({
+      error: { code: "invalid_request" },
+    });
+
     // Summary first: its own retained parent must serve every later page.
     const summarized = await client.callTool({
       name: "decode_interface_builder",
