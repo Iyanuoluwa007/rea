@@ -1,54 +1,49 @@
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { randomUUID } from "node:crypto";
+import { readFile, rm } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { runOwnedCommand } from "../dist/process/OwnedCommand.js";
 
 import {
   artifactCli,
   artifactMcpResult,
   withArtifactMcp,
 } from "./lib/artifact-e2e.mjs";
+import { createCanonicalTemporaryDirectory } from "./lib/canonical-temporary-directory.mjs";
 
-const execute = (command, arguments_, { timeout }) =>
-  new Promise((resolve, reject) => {
-    let timedOut = false;
-    const child = execFile(
+const cancellation = new AbortController();
+let shutdownSignal;
+const signalExitCodes = { SIGINT: 130, SIGTERM: 143 };
+const forwardCancellation = (signal) => {
+  if (shutdownSignal !== undefined) return;
+  shutdownSignal = signal;
+  cancellation.abort(new Error(`Verification cancelled by ${signal}`));
+};
+const signalHandlers = Object.fromEntries(
+  Object.keys(signalExitCodes).map((signal) => [
+    signal,
+    () => forwardCancellation(signal),
+  ]),
+);
+for (const [signal, handler] of Object.entries(signalHandlers))
+  process.on(signal, handler);
+
+const execute = async (command, arguments_, { timeout }) => {
+  const result = await runOwnedCommand(
+    {
       command,
-      arguments_,
-      { detached: true, encoding: "utf8" },
-      (error, stdout, stderr) => {
-        clearTimeout(deadline);
-        if (timedOut) {
-          const failure = new Error(`Command timed out after ${timeout} ms`);
-          Object.assign(failure, {
-            code: "ETIMEDOUT",
-            killed: true,
-            signal: "SIGKILL",
-            stdout,
-            stderr,
-          });
-          reject(failure);
-        } else if (error !== null) {
-          reject(error);
-        } else {
-          resolve({ stdout, stderr });
-        }
-      },
-    );
-    const deadline = setTimeout(() => {
-      timedOut = true;
-      if (child.pid === undefined) return;
-      try {
-        // This script only runs on macOS. detached:true gives the owned
-        // compiler invocation its own process group, inherited by FPC tools.
-        process.kill(-child.pid, "SIGKILL");
-      } catch (cause) {
-        if (cause.code !== "ESRCH") child.kill("SIGKILL");
-      }
-    }, timeout);
-  });
+      arguments: arguments_,
+      runId: `rea-verify-pascal-${randomUUID()}`,
+      expectedCommand: null,
+      cwd: process.cwd(),
+      env: process.env,
+    },
+    { timeoutMs: timeout, diagnosticBytes: 1024 * 1024 },
+    { signal: cancellation.signal },
+  );
+  return { stdout: result.stdout.text, stderr: result.stderr.text };
+};
 const compiler = process.env.REA_VERIFY_FPC_COMMAND;
 if (process.platform !== "darwin" || !isAbsolute(compiler ?? ""))
   throw new Error(
@@ -67,7 +62,10 @@ const callerLines = new Set(
     return matches[0];
   }),
 );
-const directory = await mkdtemp(join(tmpdir(), "rea-pascal-calls-"));
+const allocatedDirectory = await createCanonicalTemporaryDirectory(
+  "rea-pascal-calls-",
+);
+let directory = allocatedDirectory.path;
 const input = {
   breakpoints: [{ kind: "function", name: "rea_pascal_call" }],
   argument_registers: 1,
@@ -162,6 +160,22 @@ try {
         "bounded native call entries and compiler-provided source coordinates; no typed Pascal locals or interactive stepping",
     }),
   );
+} catch (cause) {
+  if (shutdownSignal === undefined) throw cause;
+  const cleanupFailure = cause?.cleanupFailure;
+  if (cleanupFailure !== undefined && cleanupFailure !== null) {
+    console.error(
+      `Verification cancelled by ${shutdownSignal}; owned compiler cleanup is incomplete: ${cleanupFailure}`,
+    );
+    process.exitCode = 1;
+  } else {
+    console.error(
+      `Verification cancelled by ${shutdownSignal}; owned compiler process group was stopped.`,
+    );
+    process.exitCode = signalExitCodes[shutdownSignal];
+  }
 } finally {
-  await rm(directory, { recursive: true, force: true });
+  for (const signal of Object.keys(signalExitCodes))
+    process.off(signal, signalHandlers[signal]);
+  await rm(allocatedDirectory.allocatedPath, { recursive: true, force: true });
 }
