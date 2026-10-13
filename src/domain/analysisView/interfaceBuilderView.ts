@@ -188,7 +188,7 @@ export const projectInterfaceBuilderView = (
       "Rows describe recognized archive objects and connections only; unrecognized classes, fields and runtime-created UI remain unknown.",
       ...(graph.truncated
         ? [
-            "The decoder stopped at a caller-selected bound; page exhaustion does not establish absence of undecoded objects or connections.",
+            "The decoded graph is incomplete (see coverage and limitations for the cause); page exhaustion does not establish absence of undecoded objects or connections.",
           ]
         : []),
     ],

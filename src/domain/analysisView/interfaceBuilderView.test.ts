@@ -132,7 +132,7 @@ describe("Interface Builder analysis views", () => {
       items: report().graph.coverage,
       source_truncated: true,
       unknowns: expect.arrayContaining([
-        expect.stringContaining("stopped at a caller-selected bound"),
+        expect.stringContaining("The decoded graph is incomplete"),
       ]),
     });
   });

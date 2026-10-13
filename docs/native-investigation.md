@@ -328,7 +328,7 @@ complete observation.
   "Contents/Resources/Base.lproj/MainMenu.nib", offset: 0, limit: 64}`.
   `document` selects rows whose evidence names that exact
   `documents[].relative_path` (nodes and edges only); `source_truncated` keeps
-  decoder truncation visible on every page. `verify:interface-builder` compiles
+  graph incompleteness visible on every page. `verify:interface-builder` compiles
   a source-owned AppKit XIB with `ibtool`. Storyboards require an installed
   iOS platform; unsupported archive forms remain explicit.
   XML plist archives accept UTF-8 and BOM-marked UTF-16 in either byte order.

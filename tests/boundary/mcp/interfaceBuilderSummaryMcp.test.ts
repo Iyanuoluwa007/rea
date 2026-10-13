@@ -67,18 +67,7 @@ mcpTest(
     const app = await fixtureApp();
     const client = await openProductionTarget(mcp, onTestFinished, app);
 
-    const complete = await client.callTool({
-      name: "decode_interface_builder",
-      arguments: {},
-    });
-    expect(complete.isError, JSON.stringify(complete.content)).not.toBe(true);
-    const full = evidenceOf(interfaceBuilderAnalysisSchema).parse(
-      complete.structuredContent,
-    );
-    expect(full.parameters).not.toHaveProperty("detail");
-    const report = full.normalized_result;
-    expect(report.documents).toHaveLength(2);
-
+    // Summary first: its own retained parent must serve every later page.
     const summarized = await client.callTool({
       name: "decode_interface_builder",
       arguments: { detail: "summary" },
@@ -89,15 +78,6 @@ mcpTest(
     const summary = evidenceOf(summarySchema).parse(
       summarized.structuredContent,
     ).normalized_result;
-    // Delivery detail never reaches the decoder or the source Evidence ID.
-    expect(summary.parent_evidence_id).toBe(full.evidence_id);
-    expect(summary.summary.documents).toEqual(report.documents);
-    expect(summary.summary.available_counts).toEqual({
-      nodes: report.graph.nodes.length,
-      edges: report.graph.edges.length,
-      coverage: report.graph.coverage.length,
-    });
-
     const source = {
       kind: "retained-evidence",
       evidence_id: summary.parent_evidence_id,
@@ -122,16 +102,37 @@ mcpTest(
       }
       return rows;
     };
-    expect(await readAll({ collection: "edges" })).toEqual(report.graph.edges);
     const main = "Contents/Resources/Main.nib";
-    const mainNodes = report.graph.nodes.filter(({ evidence }) =>
+    const edges = await readAll({ collection: "edges" });
+    const mainNodes = await readAll({ collection: "nodes", document: main });
+
+    // Only then compare with a complete call made for reference.
+    const complete = await client.callTool({
+      name: "decode_interface_builder",
+      arguments: {},
+    });
+    expect(complete.isError, JSON.stringify(complete.content)).not.toBe(true);
+    const full = evidenceOf(interfaceBuilderAnalysisSchema).parse(
+      complete.structuredContent,
+    );
+    expect(full.parameters).not.toHaveProperty("detail");
+    const report = full.normalized_result;
+    expect(report.documents).toHaveLength(2);
+    // Delivery detail never reaches the decoder or the source Evidence ID.
+    expect(summary.parent_evidence_id).toBe(full.evidence_id);
+    expect(summary.summary.documents).toEqual(report.documents);
+    expect(summary.summary.available_counts).toEqual({
+      nodes: report.graph.nodes.length,
+      edges: report.graph.edges.length,
+      coverage: report.graph.coverage.length,
+    });
+    expect(edges).toEqual(report.graph.edges);
+    const expectedMainNodes = report.graph.nodes.filter(({ evidence }) =>
       evidence.some(({ artifact_path }) => artifact_path === main),
     );
-    expect(mainNodes.length).toBeGreaterThan(0);
-    expect(mainNodes.length).toBeLessThan(report.graph.nodes.length);
-    expect(await readAll({ collection: "nodes", document: main })).toEqual(
-      mainNodes,
-    );
+    expect(expectedMainNodes.length).toBeGreaterThan(0);
+    expect(expectedMainNodes.length).toBeLessThan(report.graph.nodes.length);
+    expect(mainNodes).toEqual(expectedMainNodes);
 
     const unknownDocument = await client.callTool({
       name: "inspect_analysis_view",

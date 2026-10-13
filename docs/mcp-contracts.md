@@ -252,7 +252,7 @@ Collections are `documents`, `nodes`, `edges`, and `coverage`; for nodes and
 edges an optional `document` keeps rows whose evidence names that exact decoded
 `relative_path`, and an undecoded path is refused. The summary keeps every
 decoded document, the provider, node-kind, edge-relation and coverage-status
-counts, and decoder truncation. Each page repeats `source_truncated`. A complete
+counts, and whether the decoded graph is incomplete. Each page repeats `source_truncated`. A complete
 app graph often exceeds the default MCP response budget (XLD.app: 6.7 MB), so
 select `detail: "summary"` on the first call. Delivery detail never reaches the
 decoder or changes the source Evidence ID.
