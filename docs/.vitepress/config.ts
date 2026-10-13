@@ -29,6 +29,7 @@ export default defineConfig({
         items: [
           { text: "Native binaries", link: "/native-investigation" },
           { text: "Go build metadata", link: "/go-binaries" },
+          { text: "Rust dependencies", link: "/rust-binaries" },
           {
             text: "JavaScript and Electron",
             link: "/javascript-artifact-reconstruction",
@@ -62,6 +63,7 @@ export default defineConfig({
           { text: "Ghidra DOS analysis", link: "/ghidra-dos" },
           { text: "Ghidra raw binary", link: "/raw-binary" },
           { text: "Ghidra NativeAOT", link: "/ghidra-nativeaot" },
+          { text: "Ghidra PowerPC", link: "/ghidra-ppc" },
           { text: "Ghidra semantics", link: "/ghidra-provider" },
         ],
       },

@@ -63,7 +63,7 @@ async function metadata(
     },
     ".mcp.json": codexServerConfig(version),
     "package.json": { name: "rea-agents", version },
-    "package-lock.json": { version, packages: { "": { version } } },
+    "npm-shrinkwrap.json": { version, packages: { "": { version } } },
     ".release-please-manifest.json": { ".": version },
     "server.json": {
       version,
@@ -568,7 +568,7 @@ it("validates candidate options before inspecting the working directory", async 
 });
 
 it.each([
-  "package-lock.json",
+  "npm-shrinkwrap.json",
   "server.json",
   "src/generatedPackageMetadata.ts",
 ])("rejects inconsistent version metadata in %s", async (path) => {
@@ -579,7 +579,7 @@ it.each([
     path.endsWith(".ts")
       ? 'export const METADATA = {\n  version: "5.1.0",\n};\n'
       : JSON.stringify(
-          path === "package-lock.json"
+          path === "npm-shrinkwrap.json"
             ? { version: "6.0.0", packages: { "": { version: "5.1.0" } } }
             : path === "server.json"
               ? {

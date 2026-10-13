@@ -17,7 +17,7 @@ const installedPackageKey = (name) => `node_modules/${name}`;
 export const dependencyInstallProblems = (rootLock, installedLock) => {
   const rootPackage = rootLock.packages?.[""];
   if (rootPackage === undefined)
-    return ["package-lock.json does not contain a root package entry"];
+    return ["npm-shrinkwrap.json does not contain a root package entry"];
   const installedPackages = installedLock.packages ?? {};
   return Object.keys(directDependencies(rootPackage))
     .sort()
@@ -26,7 +26,7 @@ export const dependencyInstallProblems = (rootLock, installedLock) => {
       const expected = rootLock.packages?.[key]?.version;
       const actual = installedPackages[key]?.version;
       if (expected === undefined)
-        return [`${name}: missing resolved version in package-lock.json`];
+        return [`${name}: missing resolved version in npm-shrinkwrap.json`];
       if (actual === undefined)
         return [`${name}: missing from the installed dependency lockfile`];
       return actual === expected
@@ -39,7 +39,7 @@ const main = async () => {
   const root = process.cwd();
   try {
     const [rootLock, installedLock] = await Promise.all([
-      readJson(resolve(root, "package-lock.json")),
+      readJson(resolve(root, "npm-shrinkwrap.json")),
       readJson(resolve(root, "node_modules/.package-lock.json")),
     ]);
     const problems = dependencyInstallProblems(rootLock, installedLock);

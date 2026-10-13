@@ -1,18 +1,20 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
+  "cacheMaxAge": "7d",
+  "cacheMaxSize": "500MB",
+  "globalDependencies": [".nvmrc", ".npmrc"],
   "globalPassThroughEnv": ["GOMAXPROCS", "GOMEMLIMIT", "UV_THREADPOOL_SIZE"],
   "tasks": {
     "compile": {
       "dependsOn": ["metadata:check"],
       "inputs": [
-        ".nvmrc",
         "package.json",
-        "package-lock.json",
+        "npm-shrinkwrap.json",
         "scripts/check-dependency-install.mjs",
         "scripts/clean-build-output.mjs",
         "scripts/bundle-runtime.mjs",
         "scripts/generate-package-metadata.mjs",
-        "src/**/*.ts",
+        "src/**/*.{ts,mjs,mts}",
         "!src/**/*.test.ts",
         "!src/**/*.fixture.ts",
         "tsconfig.json",
@@ -22,10 +24,9 @@
     },
     "typecheck": {
       "inputs": [
-        ".nvmrc",
         "package.json",
-        "package-lock.json",
-        "src/**/*.ts",
+        "npm-shrinkwrap.json",
+        "src/**/*.{ts,mjs,mts}",
         "tests/**/*.ts",
         "tsconfig.json",
         "tsconfig.build.json",
@@ -38,7 +39,7 @@
     "metadata:check": {
       "inputs": [
         "package.json",
-        "package-lock.json",
+        "npm-shrinkwrap.json",
         "scripts/generate-package-metadata.mjs",
         "scripts/lib/generated-file.mjs",
         ".agents/skills/reverse-engineer-anything/SKILL.md",
@@ -49,10 +50,9 @@
       "outputs": [".cache/static-checks/oxlint.json"],
       "inputs": [
         ".gitignore",
-        ".nvmrc",
         ".oxlintrc.json",
         "package.json",
-        "package-lock.json",
+        "npm-shrinkwrap.json",
         "scripts/**/*.{cjs,cts,js,jsx,mjs,mts,ts,tsx}",
         "src/**/*.{cjs,cts,js,jsx,mjs,mts,ts,tsx}",
         "tests/**/*.{cjs,cts,js,jsx,mjs,mts,ts,tsx}",
@@ -63,7 +63,7 @@
         "!docs/.vitepress/dist/**",
         "!website/_site/**",
         "!experiments/analysis-efficiency/results/**",
-        "vitest.config.ts"
+        "*.{cjs,cts,js,jsx,mjs,mts,ts,tsx}"
       ]
     },
     "lint:built": {
@@ -71,10 +71,9 @@
       "outputs": [".cache/static-checks/oxlint.json"],
       "inputs": [
         ".gitignore",
-        ".nvmrc",
         ".oxlintrc.json",
         "package.json",
-        "package-lock.json",
+        "npm-shrinkwrap.json",
         "scripts/**/*.{cjs,cts,js,jsx,mjs,mts,ts,tsx}",
         "src/**/*.{cjs,cts,js,jsx,mjs,mts,ts,tsx}",
         "tests/**/*.{cjs,cts,js,jsx,mjs,mts,ts,tsx}",
@@ -85,22 +84,24 @@
         "!docs/.vitepress/dist/**",
         "!website/_site/**",
         "!experiments/analysis-efficiency/results/**",
-        "vitest.config.ts"
+        "*.{cjs,cts,js,jsx,mjs,mts,ts,tsx}"
       ]
     },
     "format:check": {},
     "knip": {
       "dependsOn": ["compile"],
       "inputs": [
-        ".nvmrc",
+        ".gitignore",
         "knip.json",
         "package.json",
-        "package-lock.json",
+        "npm-shrinkwrap.json",
         "scripts/**/*.{cjs,cts,js,jsx,mjs,mts,ts,tsx}",
-        "src/**/*.ts",
+        "src/**/*.{ts,mjs,mts}",
         "tests/**/*.ts",
         "tsconfig.json",
-        "tsconfig.build.json"
+        "tsconfig.build.json",
+        "docs/.vitepress/config.ts",
+        "*.{cjs,cts,js,jsx,mjs,mts,ts,tsx}"
       ]
     },
     "jscpd": {
@@ -108,7 +109,7 @@
         ".gitignore",
         ".jscpd.json",
         "package.json",
-        "package-lock.json",
+        "npm-shrinkwrap.json",
         "scripts/ci/static-check-report.mjs",
         "src/**",
         "tests/**"
@@ -119,7 +120,7 @@
       "inputs": [
         "bridge/**/*.{java,py}",
         "scripts/**/*.{cjs,cts,js,jsx,mjs,mts,ts,tsx}",
-        "src/**/*.ts",
+        "src/**/*.{ts,mjs,mts}",
         "tests/**/*.ts"
       ]
     },
@@ -139,9 +140,8 @@
         "artifacts:skills"
       ],
       "inputs": [
-        ".nvmrc",
         "package.json",
-        "package-lock.json",
+        "npm-shrinkwrap.json",
         "scripts/generate-*.mjs",
         "scripts/check-doc-facts.mjs",
         "scripts/lib/*.mjs",
@@ -171,9 +171,8 @@
     "artifacts:mcp-catalog": {
       "dependsOn": ["compile"],
       "inputs": [
-        ".nvmrc",
         "package.json",
-        "package-lock.json",
+        "npm-shrinkwrap.json",
         "scripts/generate-mcp-tool-catalog.mjs",
         "scripts/lib/generated-file.mjs"
       ],
@@ -182,9 +181,8 @@
     "artifacts:skills": {
       "dependsOn": ["compile"],
       "inputs": [
-        ".nvmrc",
         "package.json",
-        "package-lock.json",
+        "npm-shrinkwrap.json",
         "scripts/generate-skill-metadata.mjs",
         "scripts/lib/generated-file.mjs",
         ".agents/skills/reverse-engineer-anything/**"
@@ -194,9 +192,8 @@
     "artifacts:product-catalog": {
       "dependsOn": ["compile"],
       "inputs": [
-        ".nvmrc",
         "package.json",
-        "package-lock.json",
+        "npm-shrinkwrap.json",
         "scripts/generate-product-catalog.mjs",
         "scripts/lib/**/*.mjs",
         ".oxfmtrc.json"
@@ -206,9 +203,8 @@
     "artifacts:managed-evidence": {
       "dependsOn": ["artifacts:skills"],
       "inputs": [
-        ".nvmrc",
         "package.json",
-        "package-lock.json",
+        "npm-shrinkwrap.json",
         "scripts/generate-completion-ledger.mjs",
         "scripts/lib/generated-file.mjs",
         "scripts/verify/managed/**",
@@ -222,9 +218,8 @@
     "artifacts:error-schema": {
       "dependsOn": ["compile"],
       "inputs": [
-        ".nvmrc",
         "package.json",
-        "package-lock.json",
+        "npm-shrinkwrap.json",
         "scripts/generate-error-schema.mjs",
         "scripts/lib/generated-file.mjs",
         "scripts/lib/format-generated-file.mjs",
@@ -235,9 +230,8 @@
     "mcp-catalog:check:built": {
       "dependsOn": ["artifacts:mcp-catalog"],
       "inputs": [
-        ".nvmrc",
         "package.json",
-        "package-lock.json",
+        "npm-shrinkwrap.json",
         "scripts/generate-mcp-tool-catalog.mjs",
         "scripts/lib/generated-file.mjs",
         {
@@ -249,9 +243,8 @@
     "evidence:check:built": {
       "dependsOn": ["artifacts:managed-evidence"],
       "inputs": [
-        ".nvmrc",
         "package.json",
-        "package-lock.json",
+        "npm-shrinkwrap.json",
         "scripts/generate-completion-ledger.mjs",
         "scripts/lib/generated-file.mjs",
         "scripts/verify/managed/**",

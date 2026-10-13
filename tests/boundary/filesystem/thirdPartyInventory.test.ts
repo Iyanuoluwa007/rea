@@ -28,7 +28,7 @@ test("generates locked inventory and rejects stale notice metadata or preserved 
     optional: true,
   };
   await writeFile(
-    resolve(root, "package-lock.json"),
+    resolve(root, "npm-shrinkwrap.json"),
     JSON.stringify({
       packages: {
         "": { name: "fixture", version: "1.0.0" },

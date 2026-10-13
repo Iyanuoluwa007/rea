@@ -131,6 +131,9 @@ npm ci
 npm run check:fast
 ```
 
+`npm-shrinkwrap.json` is the sole dependency lock for development and the
+published plugins. Do not add a root `package-lock.json`; npm would ignore it.
+
 `npm ci` installs the exact dependencies and prepares the Husky hooks without
 building the project. Run `npm run build:cached` when you need the standalone
 CLI or MCP server; it compiles the runtime and bundles the authored skill.

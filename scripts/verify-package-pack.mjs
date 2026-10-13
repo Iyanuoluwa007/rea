@@ -25,6 +25,23 @@ export async function verifyPackagePack({ root, workspace }) {
   const packedManifest = JSON.parse(
     (await exec("tar", ["-xOf", tarball, "package/package.json"])).stdout,
   );
+  const packedLock = JSON.parse(
+    (await exec("tar", ["-xOf", tarball, "package/npm-shrinkwrap.json"]))
+      .stdout,
+  );
+  if (
+    packedManifest.overrides !== undefined ||
+    ![2, 3].includes(packedLock.lockfileVersion) ||
+    packedLock.version !== packedManifest.version ||
+    packedLock.packages?.[""].version !== packedManifest.version ||
+    JSON.stringify(packedLock.packages?.[""].dependencies) !==
+      JSON.stringify(packedManifest.dependencies) ||
+    JSON.stringify(packedLock.packages?.[""].optionalDependencies) !==
+      JSON.stringify(packedManifest.optionalDependencies)
+  )
+    throw new Error(
+      "package is not installable under the Claude plugin dependency policy",
+    );
   if (
     packedManifest.scripts?.postinstall !== undefined ||
     packedManifest.dependencies?.["node-pty"] !== undefined ||

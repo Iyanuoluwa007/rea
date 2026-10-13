@@ -109,7 +109,7 @@ class ContextCaptureTests(unittest.TestCase):
             runtime = root / 'runtime'
             (runtime / 'scripts').mkdir(parents=True)
             (runtime / 'scripts' / 'rea.mjs').write_text('')
-            (runtime / 'package-lock.json').write_text('{}')
+            (runtime / 'npm-shrinkwrap.json').write_text('{}')
             auth_home = root / 'source-auth'
             auth_home.mkdir()
             (auth_home / 'auth.json').write_text('synthetic-credential')

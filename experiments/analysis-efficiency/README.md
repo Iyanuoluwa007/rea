@@ -111,7 +111,7 @@ or acquire that reduction automatically.
 
 Use the repository's pinned Node/npm and locked dependencies. Build each selected
 revision, then copy its `dist/`, `bridge/`, `scripts/`, `skills/`, `package.json`
-and `package-lock.json` to a separate runtime directory before editing production
+and `npm-shrinkwrap.json` to a separate runtime directory before editing production
 sources. That copy needs the matching locked dependencies. The initial frozen
 baseline is `42b0ed126df7d5b908ac369715378d5e519051b7`; this study does not
 silently substitute a newer `main` or the previous Code Mode experiment.

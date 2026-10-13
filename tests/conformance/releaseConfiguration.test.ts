@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 
 import { GenericJson } from "release-please/build/src/updaters/generic-json.js";
 import { Version } from "release-please/build/src/version.js";
@@ -124,9 +124,12 @@ describe("release configuration", () => {
     expect(await readJson(".release-please-manifest.json")).toEqual({
       ".": packageJson.version,
     });
-    expect(await readJson("package-lock.json")).toMatchObject({
+    expect(await readJson("npm-shrinkwrap.json")).toMatchObject({
       version: packageJson.version,
       packages: { "": { version: packageJson.version } },
+    });
+    await expect(access("package-lock.json")).rejects.toMatchObject({
+      code: "ENOENT",
     });
     const changelog = await readFile("CHANGELOG.md", "utf8");
     expect(/^## \[([^\]]+)\]/mu.exec(changelog)?.[1]).toBe(packageJson.version);

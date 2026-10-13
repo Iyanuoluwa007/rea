@@ -192,14 +192,14 @@ async function validateCandidate(git, sha, version, commits) {
   const lock = await readJson(
     git,
     sha,
-    "package-lock.json",
+    "npm-shrinkwrap.json",
     versionSchema.extend({
       packages: z.object({ "": versionSchema }),
     }),
   );
   versions.push(
-    ["package-lock.json", lock.version],
-    ["package-lock.json packages.root", lock.packages[""].version],
+    ["npm-shrinkwrap.json", lock.version],
+    ["npm-shrinkwrap.json packages.root", lock.packages[""].version],
   );
   const server = await readJson(
     git,

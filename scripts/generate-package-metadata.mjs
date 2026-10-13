@@ -14,7 +14,7 @@ const packageJson = JSON.parse(
   await readFile(join(root, "package.json"), "utf8"),
 );
 const lock = JSON.parse(
-  await readFile(join(root, "package-lock.json"), "utf8"),
+  await readFile(join(root, "npm-shrinkwrap.json"), "utf8"),
 );
 const skill = await readFile(
   join(root, ".agents/skills/reverse-engineer-anything/SKILL.md"),
@@ -29,7 +29,7 @@ const versionOf = (name) => {
     throw new Error(`Missing locked ${name} version`);
   return value;
 };
-const source = `/** Generated from package.json and package-lock.json; do not edit. */
+const source = `/** Generated from package.json and npm-shrinkwrap.json; do not edit. */
 export const PACKAGE_METADATA = {
   name: ${JSON.stringify(packageJson.name)},
   version: ${JSON.stringify(packageJson.version)}, // x-release-please-version

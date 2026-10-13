@@ -94,7 +94,9 @@ const statusCapability = (
 describe("server and catalog identity", () => {
   it("derives package and SDK versions from canonical package metadata", async () => {
     const packageJson = JSON.parse(await readFile("package.json", "utf8"));
-    const packageLock = JSON.parse(await readFile("package-lock.json", "utf8"));
+    const packageLock = JSON.parse(
+      await readFile("npm-shrinkwrap.json", "utf8"),
+    );
     expect(PACKAGE_METADATA).toMatchObject({
       name: packageJson.name,
       version: packageJson.version,

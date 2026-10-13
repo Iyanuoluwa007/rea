@@ -9,8 +9,8 @@ import { fileURLToPath } from "node:url";
 
 // Keep the package name at the launcher boundary so release automation updates
 // only a scalar version in plugin JSON, never a compound package specifier.
-// No build, dependency installation or ambient latest-version lookup is needed
-// to run this bootstrap from a Git-installed plugin.
+// Git plugins launch the registry release. Windows source plugins additionally
+// require a build and native addon for the owned process supervisor.
 const [version, ...extra] = process.argv.slice(2);
 if (
   extra.length !== 0 ||
@@ -31,7 +31,9 @@ async function launch(packageSpecifier) {
   const { default: bundledPackage } = await import("../package.json", {
     with: { type: "json" },
   });
+  const sourceCheckout = await isSourceCheckout();
   let bundledRuntimeMatchesPin =
+    !sourceCheckout &&
     packageSpecifier === `${bundledPackage.name}@${bundledPackage.version}`;
   if (bundledRuntimeMatchesPin) {
     try {
@@ -52,9 +54,9 @@ async function launch(packageSpecifier) {
   }
 
   const runnerModule = await import(
-    (await isGitSourceCheckout())
+    sourceCheckout
       ? "../src/application/PackageRunnerCommand.mjs"
-      : "../dist/application/PackageRunnerCommand.mjs",
+      : "../dist/application/PackageRunnerCommand.mjs"
   );
   const { packageRunnerCommand } = runnerModule;
   const [command, ...args] = packageRunnerCommand(
@@ -141,14 +143,18 @@ async function launch(packageSpecifier) {
   });
 }
 
-async function isGitSourceCheckout() {
-  try {
-    await access(new URL("../.git", import.meta.url));
-    return true;
-  } catch (cause) {
-    if (isMissing(cause)) return false;
-    throw cause;
+async function isSourceCheckout() {
+  // Published artifacts exclude src/. Also reject Git worktrees (whose .git is
+  // a file) and source exports where Git metadata has been stripped.
+  for (const path of ["../.git", "../src"]) {
+    try {
+      await access(new URL(path, import.meta.url));
+      return true;
+    } catch (cause) {
+      if (!isMissing(cause)) throw cause;
+    }
   }
+  return false;
 }
 
 async function launchWindowsFallback(command, args, workingDirectory) {
@@ -159,7 +165,7 @@ async function launchWindowsFallback(command, args, workingDirectory) {
   } catch (cause) {
     await rm(workingDirectory, { recursive: true }).catch(() => {});
     process.stderr.write(
-      `REA plugin cannot safely launch a Windows fallback without the owned process supervisor: ${cause.message}\n`,
+      `REA Windows source plugins require npm ci && npm run build:cached and the Windows x64 native addon before loading the plugin. The owned process supervisor is unavailable: ${cause.message}\n`,
     );
     process.exitCode = 1;
     return;

@@ -9,7 +9,7 @@
     "docs/api/**",
     "node_modules/**",
     "CHANGELOG.md",
-    "package-lock.json",
+    "npm-shrinkwrap.json",
     ".claude-plugin/plugin.json",
     ".codex-plugin/plugin.json",
     "_reference/**",

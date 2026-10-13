@@ -216,7 +216,7 @@ def main():
             'authority': args.authority,
             'runtime_files_sha256': runtime_digest,
             'runtime_dispatcher_sha256': file_digest(repository / 'scripts/rea.mjs'),
-            'package_lock_sha256': file_digest(repository / 'package-lock.json'),
+            'package_lock_sha256': file_digest(repository / 'npm-shrinkwrap.json'),
             'experiment_sources_sha256': {
                 name: hashlib.sha256((experiment / name).read_bytes()).hexdigest()
                 for name in ['agent-trial.py', 'codex_context.py', 'provider-environment.json']

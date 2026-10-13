@@ -37,12 +37,16 @@ import { projectAnalysisError } from "../domain/analysisErrorProjection.js";
 import { ProviderStartupDeadline } from "../process/ProviderDeadline.js";
 
 const INSTALL = "/opt/ghidra_12.1.4_PUBLIC";
-const installationHost = (): GhidraInstallationHost => ({
-  platform: "linux",
+const installationHost = (
+  platform: NodeJS.Platform = "linux",
+): GhidraInstallationHost => ({
+  platform,
   architecture: "x64",
   readText: () => "application.version=12.1.4\napplication.java.min=21\n",
   executable: () => true,
   probeJava: () => ({
+    osArch: "amd64",
+    osName: platform === "win32" ? "Windows 11" : "Linux",
     version: "21.0.11",
     major: 21,
     home: "/usr/lib/jvm/jdk-21",
@@ -102,7 +106,7 @@ describe("Ghidra provider", () => {
         },
       },
     });
-    const windows = provider({ ...installationHost(), platform: "win32" });
+    const windows = provider(installationHost("win32"));
     expect(windows.inspectTargetSupport(target).status).toBe("unsupported");
   });
   it("discovers the exact installation once without launching Ghidra", () => {
@@ -112,6 +116,8 @@ describe("Ghidra provider", () => {
       probeJava: () => {
         probeCount += 1;
         return {
+          osArch: "amd64",
+          osName: "Linux",
           version: "21.0.11",
           major: 21,
           home: "/usr/lib/jvm/jdk-21",
@@ -193,7 +199,7 @@ describe("Ghidra provider", () => {
 
 describe("Ghidra raw-binary profile", () => {
   it("admits raw 6502 on Windows and binds its 16-bit language without mutation authority", async () => {
-    const ghidra = provider({ ...installationHost(), platform: "win32" });
+    const ghidra = provider(installationHost("win32"));
     const target: BinaryTarget = {
       path: "/tmp/6502.bin",
       sha256: "a".repeat(64),
@@ -260,7 +266,7 @@ describe("Ghidra raw-binary profile", () => {
     expect(shifted.value.profile?.digest).not.toBe(
       resolved.value.profile.digest,
     );
-    const windows = provider({ ...installationHost(), platform: "win32" });
+    const windows = provider(installationHost("win32"));
     expect(windows.inspectTargetSupport(target).status).toBe("unsupported");
   });
 });
@@ -302,7 +308,7 @@ describe("Ghidra Mach-O slice support", () => {
 
 describe("Ghidra platform support", () => {
   it("commits the PE role and managed classification to profile identity", async () => {
-    const ghidra = provider({ ...installationHost(), platform: "win32" });
+    const ghidra = provider(installationHost("win32"));
     const application = peTarget("x86_64");
     const library = {
       ...application,
@@ -343,7 +349,7 @@ describe("Ghidra platform support", () => {
   });
 
   it("keeps Windows annotation mutation unavailable independently of native controls", () => {
-    const ghidra = provider({ ...installationHost(), platform: "win32" });
+    const ghidra = provider(installationHost("win32"));
     expect(
       ghidra
         .capabilities()
@@ -363,7 +369,7 @@ describe("Ghidra platform support", () => {
         reason: WINDOWS_NATIVE_AUTHORITY_UNAVAILABLE_REASON,
       });
     onTestFinished(() => native.mockRestore());
-    const ghidra = provider({ ...installationHost(), platform: "win32" });
+    const ghidra = provider(installationHost("win32"));
     const nativeApplication = peTarget("x86_64");
 
     for (const architecture of ["x86", "x86_64"] as const)
@@ -454,7 +460,7 @@ describe("Ghidra Windows PE fixture admission", () => {
     await promisify(execFile)(process.execPath, [
       join(root, "scripts/create-ghidra-windows-fixture.mjs"),
     ]);
-    const ghidra = provider({ ...installationHost(), platform: "win32" });
+    const ghidra = provider(installationHost("win32"));
     for (const architecture of ["x86", "x86_64"] as const) {
       for (const dll of [false, true]) {
         const path = join(
@@ -628,6 +634,7 @@ describe("Ghidra client projection", () => {
       language_id: "auto-from-header",
       compiler_spec_id: "auto-default",
       call_relationship_coverage: "resolved-call-reference-diagnostics-v1",
+      function_dossier_coverage: "observed-facets-and-call-relationships-v1",
     });
 
     const result = await ghidra
@@ -819,6 +826,39 @@ describe("Ghidra result projection", () => {
       ok: false,
       error: { _tag: "AnalysisCancelledError", operation: "open_binary" },
     });
+  });
+});
+
+describe("Ghidra PE CodeView debug symbol limitations", () => {
+  it("projects unapplied companion PDB limitation for PE target with CodeView record", async () => {
+    const ghidra = provider(installationHost(), () => ({
+      start: () => Promise.resolve(ok(sessionInfo())),
+      callTool: () => Promise.resolve(ok(null)),
+      close: () => Promise.resolve(ok(null)),
+    }));
+    const target = {
+      ...peTarget("x86_64"),
+      codeView: {
+        pdbPath: "C:\\projects\\app\\build\\test.pdb",
+        pdbFileName: "test.pdb",
+        guid: "01234567-89ab-cdef-0123-456789abcdef",
+        age: 1,
+      },
+    };
+    const profile = await ghidra.resolveAnalysisProfile(target);
+    if (!profile.ok || profile.value.profile === null)
+      throw new Error("expected PE profile");
+    const client = ghidra.createClient(target, profile.value.profile);
+    const health = await client.execute("health", {});
+    expect(health).toMatchObject({
+      ok: true,
+      value: {
+        limitations: expect.arrayContaining([
+          'The target references debug symbols "test.pdb" (GUID 01234567-89ab-cdef-0123-456789abcdef, age 1) that were not applied; procedure names are analysis-generated.',
+        ]),
+      },
+    });
+    await client.close();
   });
 });
 
@@ -1784,6 +1824,8 @@ describe("compatible Ghidra builds", () => {
         readText: () =>
           "application.version=12.1.2\napplication.java.min=21\napplication.java.max=\n",
         probeJava: () => ({
+          osArch: "amd64",
+          osName: "Linux",
           version: "27",
           major: 27,
           home: "/usr/lib/jvm/java-27-openjdk",

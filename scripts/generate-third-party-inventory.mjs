@@ -11,7 +11,7 @@ for (const argument of arguments_)
     throw new Error(`Unknown inventory option: ${argument}`);
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const lock = JSON.parse(
-  await readFile(join(root, "package-lock.json"), "utf8"),
+  await readFile(join(root, "npm-shrinkwrap.json"), "utf8"),
 );
 const entries = Object.entries(lock.packages)
   .filter(([path]) => path !== "")
@@ -38,7 +38,7 @@ const runtimeFingerprint = createHash("sha256")
   .digest("hex");
 const source = [
   "REA npm dependency inventory",
-  "Prepared from the root package-lock.json; refresh this inventory when locked dependencies change.",
+  "Prepared from the root npm-shrinkwrap.json; refresh this inventory when locked dependencies change.",
   "License identifiers are upstream lockfile declarations, not a legal assessment.",
   "Runtime includes transitive and optional platform packages; development includes build, test and website tooling.",
   `Locked package entries: ${entries.length}; runtime: ${runtime.length}.`,

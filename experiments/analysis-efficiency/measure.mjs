@@ -147,7 +147,7 @@ const fingerprints = {
     resolve(values["runtime-root"], "scripts/rea.mjs"),
   ),
   package_lock_sha256: await fileSha(
-    resolve(values["runtime-root"], "package-lock.json"),
+    resolve(values["runtime-root"], "npm-shrinkwrap.json"),
   ),
 };
 const clientVersion = JSON.parse(

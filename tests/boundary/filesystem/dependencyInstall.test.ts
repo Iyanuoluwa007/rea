@@ -23,7 +23,7 @@ const fixture = async (
   const root = await createTestTempDirectory("rea-deps-");
   await mkdir(join(root, "node_modules"));
   await writeFile(
-    join(root, "package-lock.json"),
+    join(root, "npm-shrinkwrap.json"),
     JSON.stringify({
       packages: {
         "": {
@@ -103,7 +103,7 @@ describe("dependency install freshness", () => {
     expect(seeded.status, `${seeded.stdout}${seeded.stderr}`).toBe(0);
 
     const rootLock = asRecord(
-      JSON.parse(await readFile(join(root, "package-lock.json"), "utf8")),
+      JSON.parse(await readFile(join(root, "npm-shrinkwrap.json"), "utf8")),
     );
     const lockPackages = asRecord(rootLock?.packages);
     const rootPackage = asRecord(lockPackages?.[""]);
@@ -191,7 +191,7 @@ const createBuildCacheFixture = async (): Promise<string> => {
     throw new Error("package is missing its cached build command");
   const paths = [
     ".nvmrc",
-    "package-lock.json",
+    "npm-shrinkwrap.json",
     "turbo.json",
     "tsconfig.json",
     "tsconfig.build.json",

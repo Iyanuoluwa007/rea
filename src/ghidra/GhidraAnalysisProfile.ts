@@ -21,6 +21,10 @@ import {
   ghidraRiscvLanguageOverride,
   ghidraRiscvProfileParameters,
 } from "./GhidraRiscvProfile.js";
+import {
+  ghidraPowerPcLanguage,
+  ghidraPowerPcProfileParameters,
+} from "./GhidraPowerPcProfile.js";
 import { ghidraRawBinaryLanguage } from "./GhidraRawBinaryLanguage.js";
 
 import {
@@ -44,7 +48,9 @@ import {
 export const ghidraPinnedLanguage = (
   target: BinaryTarget,
 ): GhidraLanguageOverride | undefined =>
-  ghidraMipsLanguageOverride(target) ?? ghidraRiscvLanguageOverride(target);
+  ghidraMipsLanguageOverride(target) ??
+  ghidraRiscvLanguageOverride(target) ??
+  ghidraPowerPcLanguage(target);
 
 /** Resolve version-bound, deterministic semantics before Ghidra imports a target. */
 export const resolveGhidraAnalysisProfile = async (
@@ -120,6 +126,8 @@ export const resolveGhidraAnalysisProfile = async (
           function_body_evidence: "complete-inclusive-ranges-v1",
           function_references: "complete-body-and-entry-reference-manager-v2",
           call_relationship_coverage: "resolved-call-reference-diagnostics-v1",
+          function_dossier_coverage:
+            "observed-facets-and-call-relationships-v1",
           string_inventory_evidence: "defined-data-coverage-v1",
           location_resolution: "explicit-address-exact-entry-symbol-first-v3",
           procedure_file_offset_resolution:
@@ -155,6 +163,7 @@ export const resolveGhidraAnalysisProfile = async (
   const pinnedLanguage = ghidraPinnedLanguage(target);
   if (
     pinnedLanguage !== undefined &&
+    target.architecture !== "powerpc" &&
     languageOverride !== undefined &&
     (languageOverride.languageId !== pinnedLanguage.languageId ||
       (languageOverride.compilerSpecId !== undefined &&
@@ -214,6 +223,7 @@ export const resolveGhidraAnalysisProfile = async (
         function_body_evidence: "complete-inclusive-ranges-v1",
         function_references: "complete-body-and-entry-reference-manager-v2",
         call_relationship_coverage: "resolved-call-reference-diagnostics-v1",
+        function_dossier_coverage: "observed-facets-and-call-relationships-v1",
         string_inventory_evidence: "defined-data-coverage-v1",
         location_resolution: "explicit-address-exact-entry-symbol-first-v3",
         procedure_file_offset_resolution:
@@ -277,6 +287,7 @@ export const resolveGhidraAnalysisProfile = async (
         ...analyzerParameters,
         ...ghidraMipsProfileParameters(target, languageOverride),
         ...ghidraRiscvProfileParameters(target),
+        ...ghidraPowerPcProfileParameters(target),
         ...(pspExtension?.ok === true
           ? {
               mips_support_lane: "psp-elf32-exec-eabi32-allegrex-v2",
