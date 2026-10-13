@@ -16,17 +16,7 @@
     "mcp-server"
   ],
   "skills": "./skills",
-  "mcpServers": {
-    "rea": {
-      "command": "node",
-      "args": [
-        "./scripts/plugin-mcp-launcher.mjs",
-        "rea-agents@6.4.0"
-      ],
-      "startup_timeout_sec": 30,
-      "cwd": "."
-    }
-  },
+  "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "REA",
     "shortDescription": "Reverse engineer anything with agents",

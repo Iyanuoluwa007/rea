@@ -20,6 +20,7 @@ const pluginManifests = [
   ".claude-plugin/plugin.json",
   ".codex-plugin/plugin.json",
 ] as const;
+const pluginServerConfig = ".mcp.json";
 
 describe("release configuration", () => {
   it("keeps doctor and setup runtime support aligned with package engines", async () => {
@@ -54,13 +55,16 @@ describe("release configuration", () => {
               path: "server.json",
               jsonpath: "$.packages[0].version",
             },
-            ...pluginManifests.flatMap((path) =>
-              ["$.version", "$.mcpServers.rea.args[1]"].map((jsonpath) => ({
-                type: "json",
-                path,
-                jsonpath,
-              })),
-            ),
+            ...pluginManifests.map((path) => ({
+              type: "json",
+              path,
+              jsonpath: "$.version",
+            })),
+            {
+              type: "json",
+              path: pluginServerConfig,
+              jsonpath: "$.mcpServers.rea.args[1]",
+            },
             ...[
               ".claude-plugin/marketplace.json",
               ".agents/plugins/marketplace.json",
@@ -164,7 +168,11 @@ describe("plugin manifests", () => {
       files: string[];
     };
     expect(pkg.files).toEqual(
-      expect.arrayContaining([...pluginManifests, "skills"]),
+      expect.arrayContaining([
+        ...pluginManifests,
+        pluginServerConfig,
+        "skills",
+      ]),
     );
     for (const path of pluginManifests)
       expect(await readJson(path)).toMatchObject({ skills: "./skills" });
@@ -186,7 +194,7 @@ describe("plugin manifests", () => {
   });
 
   it.each(pluginManifests)(
-    "pins the plugin manifest %s and its server launch to the package version",
+    "pins the plugin manifest %s and Codex's server config path",
     async (path) => {
       const packageJson = (await readJson("package.json")) as {
         name: string;
@@ -195,19 +203,32 @@ describe("plugin manifests", () => {
 
       expect(await readJson(path)).toMatchObject({
         version: packageJson.version,
-        mcpServers: {
-          rea: {
-            command: "node",
-            args: [
-              `${path.startsWith(".claude") ? "${CLAUDE_PLUGIN_ROOT}/" : "./"}scripts/plugin-mcp-launcher.mjs`,
-              `${packageJson.name}@${packageJson.version}`,
-            ],
-            ...(path.startsWith(".codex") ? { cwd: "." } : {}),
-          },
-        },
+        ...(path.startsWith(".codex")
+          ? { mcpServers: `./${pluginServerConfig}` }
+          : {}),
       });
     },
   );
+
+  it("pins the plugin server launch from the shared MCP declaration", async () => {
+    const packageJson = (await readJson("package.json")) as {
+      name: string;
+      version: string;
+    };
+
+    expect(await readJson(pluginServerConfig)).toMatchObject({
+      mcpServers: {
+        rea: {
+          command: "node",
+          args: [
+            "./scripts/plugin-mcp-launcher.mjs",
+            `${packageJson.name}@${packageJson.version}`,
+          ],
+          cwd: ".",
+        },
+      },
+    });
+  });
 
   it.each(pluginManifests)(
     "stores %s in the form Release Please rewrites it to",

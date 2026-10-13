@@ -71,21 +71,38 @@ export async function verifyPackagePack({ root, workspace }) {
     const manifest = JSON.parse(
       (await exec("tar", ["-xOf", tarball, `package/${path}`])).stdout,
     );
+    const serverConfig = path.startsWith(".codex")
+      ? JSON.parse(
+          (
+            await exec("tar", [
+              "-xOf",
+              tarball,
+              "package/.mcp.json",
+            ])
+          ).stdout,
+        )
+      : manifest;
+    const expectedArgs = [
+      `${path.startsWith(".claude") ? "${CLAUDE_PLUGIN_ROOT}/" : "./"}scripts/plugin-mcp-launcher.mjs`,
+      `${packedManifest.name}@${packedManifest.version}`,
+    ];
     if (
       manifest.version !== packedManifest.version ||
       manifest.skills !== "./skills" ||
-      manifest.mcpServers?.rea?.command !== "node" ||
-      (path.startsWith(".codex") && manifest.mcpServers?.rea?.cwd !== ".") ||
-      JSON.stringify(manifest.mcpServers?.rea?.args) !==
-        JSON.stringify([
-          `${path.startsWith(".claude") ? "${CLAUDE_PLUGIN_ROOT}/" : "./"}scripts/plugin-mcp-launcher.mjs`,
-          `${packedManifest.name}@${packedManifest.version}`,
-        ])
+      (path.startsWith(".codex")
+        ? manifest.mcpServers !== "./.mcp.json" ||
+          serverConfig.mcpServers?.rea?.cwd !== "."
+        : false) ||
+      serverConfig.mcpServers?.rea?.command !== "node" ||
+      JSON.stringify(serverConfig.mcpServers?.rea?.args) !==
+        JSON.stringify(expectedArgs)
     )
       throw new Error(
         `Packaged plugin ${path} does not match the exact runtime and canonical skill release`,
       );
   }
+  if (!packedFiles.includes("package/.mcp.json"))
+    throw new Error("Packaged Codex MCP server declaration is missing");
   for (const path of [
     "scripts/plugin-mcp-launcher.mjs",
     "scripts/lib/packageRunnerCommand.mjs",

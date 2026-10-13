@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
 import { spawn } from "node:child_process";
-import { mkdtemp, rm } from "node:fs/promises";
+import { access, mkdtemp, rm } from "node:fs/promises";
 import { constants, tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { packageRunnerCommand } from "./lib/packageRunnerCommand.mjs";
 
@@ -26,6 +27,32 @@ if (
 }
 
 async function launch(packageSpecifier) {
+  // npm installs already carry the release-pinned runtime. Run it in this
+  // process so the plugin keeps the caller's working directory and the
+  // runtime retains ownership of provider and worker cleanup.
+  const { default: bundledPackage } = await import("../package.json", {
+    with: { type: "json" },
+  });
+  let bundledRuntimeMatchesPin =
+    packageSpecifier === `${bundledPackage.name}@${bundledPackage.version}`;
+  if (bundledRuntimeMatchesPin) {
+    try {
+      await access(new URL("../dist/mcp/main.js", import.meta.url));
+    } catch (cause) {
+      if (!isMissing(cause)) throw cause;
+      bundledRuntimeMatchesPin = false;
+    }
+  }
+  if (bundledRuntimeMatchesPin) {
+    process.argv = [
+      process.execPath,
+      fileURLToPath(new URL("./rea.mjs", import.meta.url)),
+      "mcp",
+    ];
+    await import("./rea.mjs");
+    return;
+  }
+
   const [command, ...args] = packageRunnerCommand(
     "npx",
     packageSpecifier,
@@ -92,4 +119,13 @@ async function launch(packageSpecifier) {
           : (code ?? 128 + (constants.signals[signal] ?? 1));
     }
   });
+}
+
+function isMissing(cause) {
+  return (
+    typeof cause === "object" &&
+    cause !== null &&
+    "code" in cause &&
+    cause.code === "ENOENT"
+  );
 }

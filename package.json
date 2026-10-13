@@ -72,6 +72,7 @@
     "scripts/prepare.mjs",
     ".claude-plugin/plugin.json",
     ".codex-plugin/plugin.json",
+    ".mcp.json",
     "skills",
     "README.md",
     "DISCLAIMER.md",

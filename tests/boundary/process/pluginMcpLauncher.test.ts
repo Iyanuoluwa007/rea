@@ -10,7 +10,7 @@ const launcher = fileURLToPath(
   new URL("../../../scripts/plugin-mcp-launcher.mjs", import.meta.url),
 );
 
-const start = (path: string, packageSpecifier = "rea-agents@6.4.0") => {
+const start = (path: string, packageSpecifier = "rea-agents@6.4.0-rc.1") => {
   const child = spawn(process.execPath, [launcher, packageSpecifier], {
     env: {
       ...process.env,
