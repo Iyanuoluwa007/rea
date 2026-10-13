@@ -63,8 +63,6 @@
     "bridge/mitmproxy/capture.py",
     "scripts/rea.mjs",
     "scripts/plugin-mcp-launcher.mjs",
-    "src/application/PackageRunnerCommand.mjs",
-    "src/application/PackageRunnerCommand.d.mts",
     "scripts/rea-android-workspace-guardian.mjs",
     "scripts/electron-active-hook.cjs",
     "scripts/electron-active-hook-boundaries.cjs",

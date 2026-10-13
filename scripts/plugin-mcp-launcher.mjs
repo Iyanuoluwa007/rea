@@ -7,8 +7,6 @@ import { constants, tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { packageRunnerCommand } from "../src/application/PackageRunnerCommand.mjs";
-
 // Keep the package name at the launcher boundary so release automation updates
 // only a scalar version in plugin JSON, never a compound package specifier.
 // No build, dependency installation or ambient latest-version lookup is needed
@@ -53,6 +51,12 @@ async function launch(packageSpecifier) {
     return;
   }
 
+  const runnerModule = await import(
+    (await isGitSourceCheckout())
+      ? "../src/application/PackageRunnerCommand.mjs"
+      : "../dist/application/PackageRunnerCommand.mjs",
+  );
+  const { packageRunnerCommand } = runnerModule;
   const [command, ...args] = packageRunnerCommand(
     "npx",
     packageSpecifier,
@@ -135,6 +139,16 @@ async function launch(packageSpecifier) {
           : (code ?? 128 + (constants.signals[signal] ?? 1));
     }
   });
+}
+
+async function isGitSourceCheckout() {
+  try {
+    await access(new URL("../.git", import.meta.url));
+    return true;
+  } catch (cause) {
+    if (isMissing(cause)) return false;
+    throw cause;
+  }
 }
 
 async function launchWindowsFallback(command, args, workingDirectory) {

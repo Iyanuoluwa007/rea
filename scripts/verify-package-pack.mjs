@@ -100,8 +100,6 @@ export async function verifyPackagePack({ root, workspace }) {
     throw new Error("Packaged Codex MCP server declaration is missing");
   for (const path of [
     "scripts/plugin-mcp-launcher.mjs",
-    "src/application/PackageRunnerCommand.mjs",
-    "src/application/PackageRunnerCommand.d.mts",
     "dist/application/PackageRunnerCommand.mjs",
   ])
     if (!packedFiles.includes(`package/${path}`))
