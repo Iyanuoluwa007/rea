@@ -71,9 +71,13 @@ mcpTest(
       name: "decode_interface_builder",
       arguments: { detail: "brief" },
     });
-    expect(parseMcpToolError(invalidDetail)).toMatchObject({
-      error: { code: "invalid_request" },
-    });
+    expect(invalidDetail.isError).toBe(true);
+    expect(invalidDetail.content).toEqual([
+      expect.objectContaining({
+        type: "text",
+        text: expect.stringMatching(/Input validation error:.*detail/su),
+      }),
+    ]);
 
     // Summary first: its own retained parent must serve every later page.
     const summarized = await client.callTool({
