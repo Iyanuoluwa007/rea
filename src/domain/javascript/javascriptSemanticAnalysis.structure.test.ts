@@ -70,11 +70,13 @@ describe("JavaScript semantic analysis: structure 1", () => {
       importedPath: [],
       resolutionMode: "require",
     });
+    // A shadowing parameter never inherits the module alias it hides; its
+    // own provenance depends on caller arguments.
     const shadow = onlyBinding(ir, "ipcRenderer");
     expect(shadow.provenance).toEqual({
-      status: "local",
+      status: "unknown",
       origins: [],
-      reason: null,
+      reason: "Parameter provenance depends on caller arguments.",
     });
     const shadowReference = ir.references.find(
       ({ name, bindingId, role }) =>
