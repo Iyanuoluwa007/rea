@@ -651,13 +651,16 @@ it.skipIf(process.platform === "win32").each([
       .object({
         jobs: z.record(
           z.string(),
+          // Jobs that call a reusable workflow declare `uses` instead of steps.
           z.object({
-            steps: z.array(
-              z.object({
-                name: z.string().optional(),
-                run: z.string().optional(),
-              }),
-            ),
+            steps: z
+              .array(
+                z.object({
+                  name: z.string().optional(),
+                  run: z.string().optional(),
+                }),
+              )
+              .optional(),
           }),
         ),
       })
@@ -672,7 +675,7 @@ it.skipIf(process.platform === "win32").each([
     const command = z
       .string()
       .parse(
-        workflow.jobs[job]?.steps.find(
+        workflow.jobs[job]?.steps?.find(
           (step) =>
             step.name ===
             (job === "merged-release"
