@@ -470,6 +470,7 @@ export async function verifyInventoryHistory(run, raw, source) {
       ".release-please-manifest.json",
       "package.json",
       "package-lock.json",
+      "npm-shrinkwrap.json",
       "server.json",
       "src/generatedPackageMetadata.ts",
       "docs/installation.md",

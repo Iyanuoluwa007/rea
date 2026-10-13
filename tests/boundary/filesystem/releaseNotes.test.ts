@@ -505,6 +505,26 @@ it.each(pluginManifests)(
   },
 );
 
+it("accepts Release Please lockfile refreshes without allowing product changes", async () => {
+  const f = await fixture();
+  await writeFile(
+    join(f.directory, "package-lock.json"),
+    '{"lockfileVersion":3}',
+  );
+  await writeFile(
+    join(f.directory, "npm-shrinkwrap.json"),
+    '{"lockfileVersion":3}',
+  );
+  await git(f.directory, [
+    "add",
+    "CHANGELOG.md",
+    "package-lock.json",
+    "npm-shrinkwrap.json",
+  ]);
+  await git(f.directory, ["commit", "-m", "chore: release lockfiles"]);
+  await f.invoke(["check", "--manifest", f.manifest, "--source", "HEAD"]);
+});
+
 it.each([
   {
     path: ".claude-plugin/plugin.json",
