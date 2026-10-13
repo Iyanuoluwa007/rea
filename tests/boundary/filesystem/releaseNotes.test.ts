@@ -48,6 +48,16 @@ const pluginManifests = [
   ".codex-plugin/plugin.json",
 ] as const;
 
+const pluginMarketplaces = [
+  ".claude-plugin/marketplace.json",
+  ".agents/plugins/marketplace.json",
+] as const;
+const pluginMarketplace = (version: string, packageName = "rea-agents") => ({
+  plugins: [
+    { name: "rea", source: { source: "npm", package: packageName, version } },
+  ],
+});
+
 const pluginManifest = (
   version: string,
   { skills = ["./skill"], packageName = "rea-agents" } = {},
@@ -77,6 +87,13 @@ beforeAll(async () => {
     await writeFile(
       join(directory, path),
       JSON.stringify(pluginManifest("6.3.0")),
+    );
+  }
+  for (const path of pluginMarketplaces) {
+    await mkdir(join(directory, dirname(path)), { recursive: true });
+    await writeFile(
+      join(directory, path),
+      JSON.stringify(pluginMarketplace("6.3.0")),
     );
   }
   await git(directory, ["add", "."]);
@@ -394,7 +411,17 @@ it("binds publication to complete recorded history and the reviewed base", async
       join(f.directory, path),
       JSON.stringify(pluginManifest("6.4.0")),
     );
-  await git(f.directory, ["add", "CHANGELOG.md", ...pluginManifests]);
+  for (const path of pluginMarketplaces)
+    await writeFile(
+      join(f.directory, path),
+      JSON.stringify(pluginMarketplace("6.4.0")),
+    );
+  await git(f.directory, [
+    "add",
+    "CHANGELOG.md",
+    ...pluginManifests,
+    ...pluginMarketplaces,
+  ]);
   await git(f.directory, ["commit", "-m", "chore: release notes"]);
   const source = await git(f.directory, ["rev-parse", "HEAD"]);
   // Release PRs bump the plugin manifest version and pinned launch only.
@@ -592,3 +619,23 @@ it("fails closed on partial GitHub errors and non-advancing pagination without s
   });
   await expect(access(output)).rejects.toMatchObject({ code: "ENOENT" });
 });
+
+it.each(pluginMarketplaces)(
+  "treats a marketplace package change in %s as product behavior",
+  async (path) => {
+    const f = await fixture();
+    await writeFile(
+      join(f.directory, path),
+      JSON.stringify(pluginMarketplace("6.4.0", "another-package")),
+    );
+    await git(f.directory, ["add", "CHANGELOG.md", path]);
+    await git(f.directory, ["commit", "-m", "chore: release notes"]);
+    await expect(
+      f.invoke(["check", "--manifest", f.manifest, "--source", "HEAD"]),
+    ).rejects.toMatchObject({
+      stderr: expect.stringContaining(
+        `Product changed after notes target; regenerate inventory: ${path}`,
+      ),
+    });
+  },
+);

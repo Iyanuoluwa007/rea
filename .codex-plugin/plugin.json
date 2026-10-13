@@ -15,9 +15,7 @@
     "decompiler",
     "mcp-server"
   ],
-  "skills": [
-    "./.agents/skills/reverse-engineer-anything"
-  ],
+  "skills": "./skills",
   "mcpServers": {
     "rea": {
       "command": "npx",

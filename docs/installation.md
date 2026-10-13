@@ -783,15 +783,23 @@ Ghidra/JDK installation; neither is inferred from startup alone.
 
 ## Agent plugins and marketplaces
 
-The repository root is both a Claude Code plugin
-(`.claude-plugin/plugin.json`) and a Codex plugin
-(`.codex-plugin/plugin.json`). Each manifest bundles the
-`reverse-engineer-anything` skill from `.agents/skills/` and registers the
-stdio server through `npx`, pinned to the exact package version in that
-manifest, without a second distribution artifact.
+REA's npm package is the shared Claude Code and Codex plugin artifact. It
+contains `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and the
+canonical generated `skills/` tree. Both manifests select `./skills` and pin
+the stdio MCP server to that exact package version. The existing release skill
+generator also pins CLI recovery commands to the same version.
 
-The repository is also its own single-plugin marketplace, through
+The repository's single-plugin marketplaces are declared in
 `.claude-plugin/marketplace.json` and `.agents/plugins/marketplace.json`.
+Both select an exact `rea-agents` npm version instead of mutable source-checkout
+contents. Release Please updates their selectors alongside the plugin manifests.
+No plugin-only publication or generated skill files committed to Git are needed.
+
+This distribution becomes installable after the first qualified npm release
+containing these plugin manifests. Earlier published packages are not changed
+by this source proposal. For local source development, generate the existing
+packaged skill before loading the repository as a plugin; the authored
+`.agents/skills/` tree is not the plugin's shipped skill layout.
 
 In Claude Code:
 

@@ -365,15 +365,29 @@ export function verifyReleaseNotes(raw, text, body) {
   };
 }
 
-const VERSION_ONLY_PLUGIN_MANIFESTS = new Set([
+const VERSION_ONLY_PLUGIN_METADATA = new Set([
   ".claude-plugin/plugin.json",
   ".codex-plugin/plugin.json",
+  ".claude-plugin/marketplace.json",
+  ".agents/plugins/marketplace.json",
 ]);
 
-/** Serialize a plugin manifest with its release-owned version fields blanked. */
-function pluginManifestWithoutVersions(text) {
+/** Serialize plugin metadata with only its release-owned version fields blanked. */
+function pluginMetadataWithoutVersions(path, text) {
   const manifest = JSON.parse(text);
   if (manifest === null || typeof manifest !== "object") return text;
+  if (path.endsWith("marketplace.json")) {
+    if (Array.isArray(manifest.plugins))
+      for (const plugin of manifest.plugins)
+        if (
+          plugin?.name === "rea" &&
+          plugin?.source?.source === "npm" &&
+          plugin.source.package === "rea-agents" &&
+          typeof plugin.source.version === "string"
+        )
+          plugin.source.version = "";
+    return JSON.stringify(manifest);
+  }
   if ("version" in manifest) manifest.version = "";
   const launch = manifest.mcpServers?.rea?.args;
   // Only the version after the last "@" is release-owned; a different package
@@ -384,17 +398,21 @@ function pluginManifestWithoutVersions(text) {
 }
 
 /**
- * A plugin manifest also carries plugin behavior, so a release may change only
- * its version and pinned server launch. Any other difference, an unreadable
+ * Plugin metadata also carries behavior, so a release may change only
+ * its version, pinned server launch, and exact REA marketplace version. Any other difference, an unreadable
  * side, or a manifest added by the release counts as a product change.
  */
 async function changesOnlyPluginVersions(run, path, from, to) {
   try {
     return (
-      pluginManifestWithoutVersions(
+      pluginMetadataWithoutVersions(
+        path,
         await run("git", ["show", `${from}:${path}`]),
       ) ===
-      pluginManifestWithoutVersions(await run("git", ["show", `${to}:${path}`]))
+      pluginMetadataWithoutVersions(
+        path,
+        await run("git", ["show", `${to}:${path}`]),
+      )
     );
   } catch {
     return false;
@@ -473,7 +491,7 @@ export async function verifyInventoryHistory(run, raw, source) {
     for (const path of paths) {
       if (allowed.has(path)) continue;
       if (
-        VERSION_ONLY_PLUGIN_MANIFESTS.has(path) &&
+        VERSION_ONLY_PLUGIN_METADATA.has(path) &&
         (await changesOnlyPluginVersions(run, path, inventory.target, resolved))
       )
         continue;

@@ -10,7 +10,11 @@
     {
       "name": "rea",
       "description": "Reverse engineer anything from your terminal or agent with one CLI and MCP server.",
-      "source": "./",
+      "source": {
+        "source": "npm",
+        "package": "rea-agents",
+        "version": "6.4.0"
+      },
       "category": "development"
     }
   ]

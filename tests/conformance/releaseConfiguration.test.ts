@@ -61,6 +61,14 @@ describe("release configuration", () => {
                 jsonpath,
               })),
             ),
+            ...[
+              ".claude-plugin/marketplace.json",
+              ".agents/plugins/marketplace.json",
+            ].map((path) => ({
+              type: "json",
+              path,
+              jsonpath: "$.plugins[0].source.version",
+            })),
           ],
         },
       },
@@ -150,6 +158,33 @@ describe("release configuration", () => {
 });
 
 describe("plugin manifests", () => {
+  it("distributes both plugins with generated canonical skills from the exact npm release", async () => {
+    const pkg = (await readJson("package.json")) as {
+      version: string;
+      files: string[];
+    };
+    expect(pkg.files).toEqual(
+      expect.arrayContaining([...pluginManifests, "skills"]),
+    );
+    for (const path of pluginManifests)
+      expect(await readJson(path)).toMatchObject({ skills: "./skills" });
+    for (const path of [
+      ".claude-plugin/marketplace.json",
+      ".agents/plugins/marketplace.json",
+    ])
+      expect(await readJson(path)).toMatchObject({
+        plugins: [
+          {
+            source: {
+              source: "npm",
+              package: "rea-agents",
+              version: pkg.version,
+            },
+          },
+        ],
+      });
+  });
+
   it.each(pluginManifests)(
     "pins the plugin manifest %s and its server launch to the package version",
     async (path) => {

@@ -60,6 +60,34 @@ export async function verifyPackagePack({ root, workspace }) {
     throw new Error(
       "packaged skill metadata did not match the catalog shipped in the package",
     );
+  for (const path of [
+    ".claude-plugin/plugin.json",
+    ".codex-plugin/plugin.json",
+  ]) {
+    const manifest = JSON.parse(
+      (await exec("tar", ["-xOf", tarball, `package/${path}`])).stdout,
+    );
+    if (
+      manifest.version !== packedManifest.version ||
+      manifest.skills !== "./skills" ||
+      JSON.stringify(manifest.mcpServers?.rea?.args) !==
+        JSON.stringify([
+          "-y",
+          `${packedManifest.name}@${packedManifest.version}`,
+          "mcp",
+        ])
+    )
+      throw new Error(
+        `Packaged plugin ${path} does not match the exact runtime and canonical skill release`,
+      );
+  }
+  if (
+    skill.includes(`${packedManifest.name}@latest`) ||
+    !skill.includes(`${packedManifest.name}@${packedManifest.version}`)
+  )
+    throw new Error(
+      "Packaged plugin skill recovery is not pinned to the shipped runtime",
+    );
   if (
     packedFiles.some(
       (path) => path.includes("__pycache__") || path.endsWith(".pyc"),
