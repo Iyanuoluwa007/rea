@@ -57,11 +57,22 @@ describe("release configuration", () => {
               path: "server.json",
               jsonpath: "$.packages[0].version",
             },
-            ...pluginManifests.map((path) => ({
-              type: "json",
-              path,
-              jsonpath: "$.version",
-            })),
+            ...pluginManifests.flatMap((path) => [
+              {
+                type: "json",
+                path,
+                jsonpath: "$.version",
+              },
+              ...(path.startsWith(".claude")
+                ? [
+                    {
+                      type: "json",
+                      path,
+                      jsonpath: "$.mcpServers.rea.args[1]",
+                    },
+                  ]
+                : []),
+            ]),
             {
               type: "json",
               path: pluginServerConfig,
@@ -195,7 +206,7 @@ describe("plugin manifests", () => {
       });
   });
 
-  it.each([...pluginManifests, pluginServerConfig])(
+  it.each(pluginManifests)(
     "pins the plugin manifest %s and Codex's server config path",
     async (path) => {
       const packageJson = (await readJson("package.json")) as {

@@ -43,6 +43,7 @@
   "packageManager": "npm@11.16.0",
   "files": [
     "dist",
+    "npm-shrinkwrap.json",
     "install.sh",
     "bridge/hopper_bridge.py",
     "bridge/native/NativeUIChildren.swift",
@@ -338,11 +339,6 @@
     "ws": "8.21.0",
     "yaml": "2.9.0",
     "zod": "4.4.3"
-  },
-  "overrides": {
-    "vitepress": {
-      "vite": "6.4.4"
-    }
   },
   "devDependencies": {
     "@fast-check/vitest": "0.5.0",

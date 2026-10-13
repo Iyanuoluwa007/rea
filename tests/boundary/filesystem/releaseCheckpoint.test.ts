@@ -39,6 +39,7 @@ const codexServerConfig = (version: string, launch = version) => ({
     rea: {
       command: "node",
       args: ["./scripts/plugin-mcp-launcher.mjs", launch],
+      cwd: ".",
       startup_timeout_sec: 30,
     },
   },
