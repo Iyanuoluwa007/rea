@@ -9,7 +9,8 @@ import {
 import type { BinaryTarget } from "../domain/binaryTargetTypes.js";
 import type { Evidence } from "../domain/evidence.js";
 import type { JsonValue } from "../domain/jsonValue.js";
-import { ok } from "../domain/result.js";
+import { AnalysisInputError } from "../domain/analysisErrorCore.js";
+import { err, ok } from "../domain/result.js";
 import type { Logger } from "pino";
 import type { WithAdmittedAnalysis } from "./analysisAdmission.js";
 
@@ -39,10 +40,26 @@ export const retainedSummaryDelivery = (
   const selected = (operation: string, parameters: Parameters): boolean =>
     operations.has(operation) && parameters.detail === "summary";
   return {
-    preflight: (operation: string, parameters: Parameters) =>
-      selected(operation, parameters)
+    preflight: (operation: string, parameters: Parameters) => {
+      if (!operations.has(operation)) return ok(null);
+      const detail = analysisDetailSchema
+        .unwrap()
+        .optional()
+        .safeParse(parameters.detail);
+      if (!detail.success)
+        return err(
+          new AnalysisInputError(operation, { cause: detail.error }, [
+            {
+              path: ["detail"],
+              reason: "invalid_value",
+              expected: ["complete", "summary"],
+            },
+          ]),
+        );
+      return detail.data === "summary"
         ? requireAnalysisViewRetention(operation, retention)
-        : ok(null),
+        : ok(null);
+    },
     projectEvidence: (
       operation: string,
       parameters: Parameters,
@@ -59,7 +76,6 @@ export const withoutDeliveryDetail =
   (operations: ReadonlySet<string>) =>
   (operation: string, parameters: Parameters): Parameters => {
     if (!operations.has(operation)) return parameters;
-    analysisDetailSchema.unwrap().optional().parse(parameters.detail);
     const { detail: _detail, ...selected } = parameters;
     return selected;
   };
