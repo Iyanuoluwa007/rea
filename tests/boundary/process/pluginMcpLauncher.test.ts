@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { lstat, mkdir, writeFile } from "node:fs/promises";
+import { lstat, mkdir, readFile, writeFile } from "node:fs/promises";
 import { delimiter, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, it, onTestFinished } from "vitest";
@@ -91,6 +91,56 @@ it.skipIf(process.platform === "win32")(
     });
     child.kill("SIGTERM");
     expect(await closed).toMatchObject({ code: 0, stderr: "stopped" });
+  },
+);
+
+it.skipIf(process.platform === "win32")(
+  "stops a package runner and its long-lived server with stdin still open",
+  async () => {
+    const root = await createTestTempDirectory("rea-plugin-process-tree-");
+    const runnerMarker = join(root, "runner-stopped");
+    const serverMarker = join(root, "server-stopped");
+    const bin = await fakeRunner(`
+      const { appendFileSync } = require("node:fs");
+      const { spawn } = require("node:child_process");
+      const server = spawn(process.execPath, ["-e", ${JSON.stringify(`
+        const { appendFileSync } = require("node:fs");
+        process.on("SIGTERM", () => {
+          appendFileSync(${JSON.stringify(serverMarker)}, "stopped\\n");
+          process.exit(0);
+        });
+        process.stdin.resume();
+        process.stdout.write("server-ready\\n");
+      `)}], { stdio: "inherit" });
+      let stopping = false;
+      process.on("SIGTERM", () => {
+        stopping = true;
+        appendFileSync(${JSON.stringify(runnerMarker)}, "stopped\\n");
+      });
+      process.stdin.resume();
+      server.once("close", () => { if (stopping) process.exit(0); });
+    `);
+    const { child, closed } = start(bin);
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(
+        () => reject(new Error("package server did not become ready")),
+        5_000,
+      );
+      child.stdout.on("data", (bytes: Buffer) => {
+        if (bytes.toString("utf8").includes("server-ready\n")) {
+          clearTimeout(timeout);
+          resolve();
+        }
+      });
+      child.once("error", reject);
+    });
+
+    // Keep the protocol pipe open: shutdown must reach the package runner and
+    // its server process independently of EOF on stdin.
+    child.kill("SIGTERM");
+    expect(await closed).toMatchObject({ code: 0, signal: null });
+    await expect(readFile(runnerMarker, "utf8")).resolves.toBe("stopped\n");
+    await expect(readFile(serverMarker, "utf8")).resolves.toBe("stopped\n");
   },
 );
 

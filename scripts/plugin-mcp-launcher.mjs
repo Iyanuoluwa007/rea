@@ -73,6 +73,10 @@ async function launch(packageSpecifier) {
   }
   const child = spawn(command, args, {
     cwd: workingDirectory,
+    // A dedicated POSIX process group gives this launcher ownership of the
+    // package runner and any server it starts. Windows keeps direct-child
+    // signaling until a verified Job Object owner is available here.
+    detached: process.platform !== "win32",
     stdio: "inherit",
     shell: false,
   });
@@ -80,8 +84,17 @@ async function launch(packageSpecifier) {
   const signals = new Map();
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
     const forward = () => {
-      if (child.exitCode === null && child.signalCode === null)
-        child.kill(signal);
+      if (child.exitCode !== null || child.signalCode !== null) return;
+      try {
+        if (process.platform !== "win32" && child.pid !== undefined)
+          process.kill(-child.pid, signal);
+        else child.kill(signal);
+      } catch (cause) {
+        if (!isMissingProcess(cause))
+          process.stderr.write(
+            `REA plugin could not forward ${signal}: ${cause.message}\n`,
+          );
+      }
     };
     signals.set(signal, forward);
     process.on(signal, forward);
@@ -127,5 +140,14 @@ function isMissing(cause) {
     cause !== null &&
     "code" in cause &&
     cause.code === "ENOENT"
+  );
+}
+
+function isMissingProcess(cause) {
+  return (
+    typeof cause === "object" &&
+    cause !== null &&
+    "code" in cause &&
+    cause.code === "ESRCH"
   );
 }

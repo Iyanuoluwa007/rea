@@ -1,5 +1,7 @@
 import { readFile } from "node:fs/promises";
 
+import { GenericJson } from "release-please/build/src/updaters/generic-json.js";
+import { Version } from "release-please/build/src/version.js";
 import { describe, expect, it } from "vitest";
 
 import { SUPPORTED_NODE_VERSION_RANGE } from "../../src/domain/runtimeVersion.js";
@@ -209,6 +211,73 @@ describe("plugin manifests", () => {
       });
     },
   );
+
+  it("advances every plugin pin through Release Please JSON extra-files", async () => {
+    const packageJson = (await readJson("package.json")) as {
+      version: string;
+    };
+    const [major, minor] = packageJson.version.split(".").map(Number);
+    const nextVersion = `${major}.${minor + 1}.0`;
+    const version = Version.parse(nextVersion);
+    const config = (await readJson("release-please-config.json")) as {
+      packages: {
+        ".": {
+          "extra-files": Array<{
+            type: string;
+            path: string;
+            jsonpath?: string;
+          }>;
+        };
+      };
+    };
+    const updated = new Map<string, string>();
+
+    for (const extraFile of config.packages["."]["extra-files"]) {
+      if (extraFile.type !== "json" || extraFile.jsonpath === undefined)
+        continue;
+      const content =
+        updated.get(extraFile.path) ?? (await readFile(extraFile.path, "utf8"));
+      updated.set(
+        extraFile.path,
+        new GenericJson(extraFile.jsonpath, version).updateContent(content),
+      );
+    }
+
+    const updatedJson = new Map<string, unknown>(
+      [...updated].map(
+        ([path, content]) => [path, JSON.parse(content) as unknown] as const,
+      ),
+    );
+    expect(updatedJson.get(".claude-plugin/plugin.json")).toMatchObject({
+      version: nextVersion,
+      mcpServers: {
+        rea: { args: ["-y", `rea-agents@${nextVersion}`, "mcp"] },
+      },
+    });
+    expect(updatedJson.get(".codex-plugin/plugin.json")).toMatchObject({
+      version: nextVersion,
+    });
+    expect(updatedJson.get(pluginServerConfig)).toMatchObject({
+      mcpServers: {
+        rea: { args: ["-y", `rea-agents@${nextVersion}`, "mcp"] },
+      },
+    });
+    for (const path of [
+      ".claude-plugin/marketplace.json",
+      ".agents/plugins/marketplace.json",
+    ])
+      expect(updatedJson.get(path)).toMatchObject({
+        plugins: [
+          {
+            source: {
+              source: "npm",
+              package: "rea-agents",
+              version: nextVersion,
+            },
+          },
+        ],
+      });
+  });
 
   it("pins the plugin server launch from the shared MCP declaration", async () => {
     const packageJson = (await readJson("package.json")) as {
