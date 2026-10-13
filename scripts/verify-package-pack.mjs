@@ -42,6 +42,10 @@ export async function verifyPackagePack({ root, workspace }) {
     throw new Error(
       "package included authored skill sources instead of only the generated bundle",
     );
+  if (packedFiles.some((path) => path.startsWith("package/src/")))
+    throw new Error(
+      "Packaged runtime must not masquerade as a source checkout",
+    );
   if (packedFiles.some((path) => path.startsWith("package/.cache/")))
     throw new Error("package included development cache or test metadata");
   const skill = (
@@ -84,7 +88,7 @@ export async function verifyPackagePack({ root, workspace }) {
   }
   for (const path of [
     "scripts/plugin-mcp-launcher.mjs",
-    "src/process/packageRunnerCommand.mjs",
+    "scripts/lib/packageRunnerCommand.mjs",
   ])
     if (!packedFiles.includes(`package/${path}`))
       throw new Error(
