@@ -1,5 +1,4 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { RizinDebugSessionManager } from "../../../src/rizin/RizinDebugSessionManager.js";
 import {
   createRizinTestManager,
   stopFakeNoInferior,
@@ -7,6 +6,7 @@ import {
 } from "./RizinTestInferiorTty.js";
 import { rizinCommand } from "../../../src/rizin/RizinCommand.js";
 import { spawnOwnedProviderProcess } from "../../../src/process/ProviderProcess.js";
+import { cleanupOwnedProcessGroup } from "../../../src/process/ProcessOwnership.js";
 import {
   createRizinCoverageHarness,
   createInjectedProcess,
@@ -298,29 +298,55 @@ it.skipIf(process.platform === "win32")(
     const provider = await makeProvider(
       "process.stdin.resume(); setInterval(() => {}, 1000);",
     );
+    // This provider never answers the detach request, so the retained owner
+    // cannot stop it; the test reaps the owned launch itself afterwards.
+    let ownedLaunch:
+      | Awaited<ReturnType<typeof spawnOwnedProviderProcess>>
+      | undefined;
+    let ownedProcessExit: Promise<void> | undefined;
     const manager = createRizinTestManager(
       { REA_RIZIN_COMMAND: provider },
       {
         stopProcess: incompleteStop,
         spawnProcess: async (options) => {
-          const launched = await spawnOwnedProviderProcess(options);
+          ownedLaunch = await spawnOwnedProviderProcess(options);
+          ownedProcessExit = new Promise<void>((resolve) => {
+            const child = ownedLaunch!.process;
+            if (child.exitCode !== null || child.signalCode !== null) resolve();
+            else child.once("exit", () => resolve());
+          });
           resolveSpawned();
-          return launched;
+          return ownedLaunch;
         },
       },
     );
     track(manager);
-    const abort = new AbortController();
-    const starting = manager.start(
-      { path: "/tmp/cancel-start", inferior_tty: await rizinTestInferiorTty() },
-      abort.signal,
-    );
-    await spawned;
-    abort.abort();
-    const result = await starting;
-    expect(result.ok).toBe(false);
-    if (!result.ok)
-      expect(result.error.message).toContain("injected stop uncertainty");
+    try {
+      const abort = new AbortController();
+      const starting = manager.start(
+        {
+          path: "/tmp/cancel-start",
+          inferior_tty: await rizinTestInferiorTty(),
+        },
+        abort.signal,
+      );
+      await spawned;
+      abort.abort();
+      const result = await starting;
+      expect(result.ok).toBe(false);
+      if (!result.ok)
+        expect(result.error.message).toContain("injected stop uncertainty");
+    } finally {
+      if (ownedLaunch !== undefined) {
+        const reaped = await cleanupOwnedProcessGroup(ownedLaunch.ownership);
+        if (!reaped.cleaned) {
+          const child = ownedLaunch.process;
+          if (child.exitCode === null && child.signalCode === null)
+            child.kill("SIGKILL");
+        }
+        await ownedProcessExit;
+      }
+    }
   },
 );
 
