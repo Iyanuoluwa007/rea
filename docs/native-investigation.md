@@ -227,6 +227,10 @@ nodes and edges. Node payloads are bounded to 8 MiB and serialized results to
 32 MiB. Pagination returns edges whose source is on the node page and preserves
 stable IDs for endpoints outside that page.
 
+Within one value trace, each exact procedure selector is attempted at most once,
+including failed analyses. Failures remain unknown observations and do not
+establish canonical function identity. A new trace can retry those selectors.
+
 The raw Java `is_dead` flag can remain set after Ghidra decodes a live block;
 `block_membership` reports actual syntax-tree membership separately.
 
