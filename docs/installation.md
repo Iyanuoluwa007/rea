@@ -288,11 +288,12 @@ hosted connector; see [its configuration](client-configuration.md#other-client-s
 | Qoder              | `qoder`          |
 | Factory Droid      | `droid`          |
 | Trae               | `trae`           |
+| WorkBuddy          | `workbuddy`      |
 | ZCode              | `zcode`          |
 | DeepSeek Harness   | `dsh`            |
 
-`dsh` and `kimi` require a release containing them. The registry check above does
-not cover them.
+`dsh`, `kimi`, and `workbuddy` require a release containing them. The registry
+check above does not cover them.
 
 See [client configuration and troubleshooting](client-configuration.md) for
 configuration paths, profiles, trust policies, and schema-limit workarounds.
@@ -493,7 +494,13 @@ copying license secrets into logs, or killing unrelated Hopper processes.
 REA connects to an existing Ghidra installation on Linux x64/arm64, macOS x64/arm64,
 or experimental Windows x64 P0.
 It accepts Ghidra 12.1.x and the 64-bit full JDK declared by that installation's
-`application.java.min` and `application.java.max`. Current 12.1 releases require
+`application.java.min` and `application.java.max`. The JDK's reported platform must also
+map to the same native decompiler directory as the host: a JDK running under
+emulation (for example x86_64 under Rosetta on Apple silicon) or reporting a
+non-host `os.name` fails the doctor
+even when it is an otherwise accepted 64-bit full JDK. Select a matching JDK
+through `JAVA_HOME`; adding another decompiler in the JVM-selected directory
+does not satisfy this host-validated admission rule. Current 12.1 releases require
 JDK 21 or newer and set no maximum. The bridge is verified with Ghidra 12.1.4
 and JDK 21. Each installation must include the native decompiler for the host
 architecture in `Ghidra/Features/Decompiler/os/<platform>/` or the corresponding
@@ -556,6 +563,11 @@ registrations. See [Windows Ghidra P0](windows-ghidra-p0.md) for provider diagno
 Doctor validates the platform, architecture, Ghidra 12.1.x application version,
 `support/analyzeHeadless` or `support/analyzeHeadless.bat`, the installation's
 Java major range, 64-bit JDK bitness, and the presence of `javac`/`javac.exe`.
+It also checks that the reported JVM `os.arch` and `os.name` map to the same native decompiler
+directory validated for the host; unrecognized reported architectures or a
+non-host operating system are refused. LaunchSupport overrides of either
+property, including through helper-environment JVM option variables, are
+rejected at launch.
 When Java is found through `PATH`, setup records its observed JDK home so GUI
 MCP clients do not depend on an incidental shell path. Setup shows every exact
 environment entry in its plan, writes only after approval, and never downloads,
@@ -764,6 +776,9 @@ errors expose Error names, messages, and available codes under
 truncation markers. Darwin ownership-helper compilation failures also retain
 the compiler outcome, exit code or signal, and bounded stderr; a timed-out
 compiler remains distinguishable from a compiler that exited with an error.
+The helper compile deadline defaults to 120,000 ms; set
+`REA_SWIFTC_COMPILE_TIMEOUT_MS` to an integer between 1 and 2,147,483,647 when
+a busy host needs longer.
 Other rejection values retain their primitive value or an explicit type.
 Shutdown warnings include the failure
 kind, message, and diagnostics, while process and temporary-project cleanup
