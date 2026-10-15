@@ -1,5 +1,6 @@
 import * as t from "@babel/types";
 
+import { semanticBuiltinGlobalResolution } from "./javascriptSemanticAmbientWrites.js";
 import type {
   JavaScriptSemanticBoundaryOperation,
   JavaScriptSemanticCallable,
@@ -14,7 +15,6 @@ import {
 } from "./javascriptAstValues.js";
 import {
   resolveSemanticBindingState,
-  semanticResolutionBlocked,
   type JavaScriptSemanticAnalysisState,
 } from "./javascriptSemanticState.js";
 import {
@@ -202,8 +202,9 @@ const collectRequests = (
       !t.isNewExpression(node)
     )
       return;
-    const method = requestMethod(node, context.state);
-    if (method === null) return;
+    const request = requestMethod(node, context.state);
+    if (request === null) return;
+    const { method, identity } = request;
     const endpoint = requestEndpoint(node);
     output.push({
       node,
@@ -224,7 +225,8 @@ const collectRequests = (
         linkedRequestIds: [],
         endpoint,
         fields: requestFields(node, method, context.state),
-        resolution: endpoint === null ? "partial" : "complete",
+        resolution:
+          endpoint === null || identity === "partial" ? "partial" : "complete",
       },
     });
   });
@@ -340,25 +342,27 @@ const boundaryDetails = (
 } | null => {
   if (t.isIdentifier(node.callee)) {
     const name = node.callee.name;
-    const unbound =
-      resolveSemanticBindingState(state, node.callee, name) === undefined &&
-      !semanticResolutionBlocked(state, node.callee, name);
-    if (
-      unbound &&
-      ["String", "Number", "Boolean", "parseInt", "parseFloat"].includes(name)
-    )
-      return { kind: "coerce", method: name, resolution: "complete" };
+    const resolution = [
+      "String",
+      "Number",
+      "Boolean",
+      "parseInt",
+      "parseFloat",
+    ].includes(name)
+      ? semanticBuiltinGlobalResolution(node.callee, state, name)
+      : null;
+    if (resolution !== null)
+      return { kind: "coerce", method: name, resolution };
   }
   const member = memberCallee(node);
   if (member === null) return null;
   const method = semanticStaticPropertyName(member.property, member.computed);
-  if (
-    method === "parse" &&
-    t.isIdentifier(member.object, { name: "JSON" }) &&
-    resolveSemanticBindingState(state, member.object, "JSON") === undefined &&
-    !semanticResolutionBlocked(state, member.object, "JSON")
-  )
-    return { kind: "parse", method: "JSON.parse", resolution: "complete" };
+  const jsonParse =
+    method === "parse" && t.isIdentifier(member.object, { name: "JSON" })
+      ? semanticBuiltinGlobalResolution(member.object, state, "JSON", ["parse"])
+      : null;
+  if (jsonParse !== null)
+    return { kind: "parse", method: "JSON.parse", resolution: jsonParse };
   if (method === "parse" || method === "safeParse")
     return { kind: "parse", method, resolution: "partial" };
   if (method === "validate" || method === "assert" || method === "is")
@@ -369,15 +373,19 @@ const boundaryDetails = (
 const requestMethod = (
   node: t.CallExpression | t.OptionalCallExpression | t.NewExpression,
   state: JavaScriptSemanticAnalysisState,
-): JavaScriptSemanticRequestOperation["method"] | null => {
+): {
+  readonly method: JavaScriptSemanticRequestOperation["method"];
+  readonly identity: "complete" | "partial";
+} | null => {
   if (t.isIdentifier(node.callee)) {
     const name = node.callee.name;
-    const unbound =
-      resolveSemanticBindingState(state, node.callee, name) === undefined &&
-      !semanticResolutionBlocked(state, node.callee, name);
-    if (!t.isNewExpression(node) && unbound && name === "fetch") return "fetch";
-    if (t.isNewExpression(node) && unbound && name === "WebSocket")
-      return "WebSocket";
+    const global = t.isNewExpression(node) ? "WebSocket" : "fetch";
+    // A visibly replaced global is no longer the built-in request API.
+    const identity =
+      name === global
+        ? semanticBuiltinGlobalResolution(node.callee, state, name)
+        : null;
+    if (identity !== null) return { method: global, identity };
   }
   const method = builtinMethod(node.callee, state, [
     "http",
@@ -385,7 +393,9 @@ const requestMethod = (
     "node:http",
     "node:https",
   ]);
-  return method === "request" || method === "get" ? method : null;
+  return method === "request" || method === "get"
+    ? { method, identity: "complete" }
+    : null;
 };
 
 const requestFields = (

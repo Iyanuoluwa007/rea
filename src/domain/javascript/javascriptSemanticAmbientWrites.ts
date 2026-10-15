@@ -14,6 +14,7 @@ import {
   resolveSemanticBindingState,
   semanticStableInitializer,
   type JavaScriptSemanticAnalysisState,
+  type JavaScriptSemanticMemberEffect,
 } from "./javascriptSemanticState.js";
 import { isImportMetaUrl } from "./javascriptStaticAnalysisHelpers.js";
 import { semanticMutationInitializers } from "./javascriptSemanticMutationInitializers.js";
@@ -289,29 +290,99 @@ export function* indexJavaScriptAmbientWritesSteps(
 }
 
 /**
- * Recognize an ambient name or direct global-object property without a visible
- * source-local overwrite. This is a syntax-local identity fact, not proof that
- * the runtime's globals have never been patched by other code.
+ * How a global reference relates to visible source-local writes. A write under
+ * an unknown key may or may not select the name, so it leaves the built-in
+ * possible rather than replaced.
  */
+type SemanticGlobalReferenceState =
+  | "not-global"
+  | "unmodified"
+  | "possibly-replaced"
+  | "replaced";
+
+/** Exact written paths, indexed once per collected ambient write list. */
+const exactAmbientWrites = new WeakMap<
+  readonly JavaScriptSemanticMemberEffect[],
+  { readonly length: number; readonly paths: ReadonlySet<string> }
+>();
+
+const exactAmbientWritePaths = (
+  state: JavaScriptSemanticAnalysisState,
+): ReadonlySet<string> => {
+  const effects = state.ambientWriteEffects;
+  const cached = exactAmbientWrites.get(effects);
+  if (cached?.length === effects.length) return cached.paths;
+  const paths = new Set<string>();
+  for (const { path } of effects)
+    if (path.every((key) => typeof key === "string" || typeof key === "number"))
+      paths.add(JSON.stringify(path.map(String)));
+  exactAmbientWrites.set(effects, { length: effects.length, paths });
+  return paths;
+};
+
+/** Coverage is the prefix index; only an all-exact written prefix replaces. */
+const ambientPathWrite = (
+  state: JavaScriptSemanticAnalysisState,
+  path: readonly string[],
+): "none" | "possible" | "exact" => {
+  if (!state.ambientWrites.covers(path)) return "none";
+  const exact = exactAmbientWritePaths(state);
+  for (let length = path.length; length > 0; length -= 1)
+    if (exact.has(JSON.stringify(path.slice(0, length)))) return "exact";
+  return "possible";
+};
+
+/**
+ * Classify an ambient name, direct global-object property, or member path of
+ * one, such as `JSON.parse`, against visible source-local overwrites. This is a
+ * syntax-local identity fact, not proof that the runtime's globals have never
+ * been patched by other code.
+ */
+const semanticGlobalReferenceState = (
+  callee: t.Node,
+  state: JavaScriptSemanticAnalysisState,
+  name: string,
+  members: readonly string[] = [],
+): SemanticGlobalReferenceState => {
+  const node = unwrapJavaScriptExpression(callee).node;
+  const paths = [["global", name, ...members]];
+  if (!isUnshadowedGlobal(node, state, name)) {
+    if (
+      !t.isMemberExpression(node) ||
+      semanticStaticPropertyKey(node.property, node.computed) !== name
+    )
+      return "not-global";
+    const root = unwrapJavaScriptExpression(node.object).node;
+    const namespace = globalObjectName(root, state);
+    if (namespace === undefined) return "not-global";
+    paths.push(["global", namespace]);
+  }
+  const writes = paths.map((path) => ambientPathWrite(state, path));
+  if (writes.includes("exact")) return "replaced";
+  return writes.includes("possible") ? "possibly-replaced" : "unmodified";
+};
+
+/** Recognize a global reference without any visible source-local overwrite. */
 export const isUnmodifiedGlobalReference = (
   callee: t.Node,
   state: JavaScriptSemanticAnalysisState,
   name: string,
-): boolean => {
-  const node = unwrapJavaScriptExpression(callee).node;
-  if (state.ambientWrites.covers(["global", name])) return false;
-  if (isUnshadowedGlobal(node, state, name)) return true;
-  if (
-    !t.isMemberExpression(node) ||
-    semanticStaticPropertyKey(node.property, node.computed) !== name
-  )
-    return false;
-  const root = unwrapJavaScriptExpression(node.object).node;
-  const namespace = globalObjectName(root, state);
-  return (
-    namespace !== undefined &&
-    !state.ambientWrites.covers(["global", namespace])
-  );
+): boolean =>
+  semanticGlobalReferenceState(callee, state, name) === "unmodified";
+
+/**
+ * Resolve a built-in effect's identity: complete when unmodified, partial when
+ * an unknown-key write may have replaced it, and null when not the built-in.
+ */
+export const semanticBuiltinGlobalResolution = (
+  callee: t.Node,
+  state: JavaScriptSemanticAnalysisState,
+  name: string,
+  members: readonly string[] = [],
+): "complete" | "partial" | null => {
+  const reference = semanticGlobalReferenceState(callee, state, name, members);
+  if (reference === "unmodified") return "complete";
+  return reference === "possibly-replaced" ? "partial" : null;
 };
 
 /** A module URL base is known only while its property has no visible write. */

@@ -1,5 +1,6 @@
 import * as t from "@babel/types";
 
+import { semanticBuiltinGlobalResolution } from "./javascriptSemanticAmbientWrites.js";
 import type {
   JavaScriptSemanticCallable,
   JavaScriptSemanticEventOperation,
@@ -68,6 +69,8 @@ interface TimerCandidate {
   readonly node: t.CallExpression | t.OptionalCallExpression;
   readonly method: JavaScriptSemanticTimerOperation["method"];
   readonly kind: JavaScriptSemanticTimerOperation["kind"];
+  /** Partial when an unknown-key global write may have replaced the timer. */
+  readonly identity: "complete" | "partial";
   readonly ownerCallableId: string | null;
   readonly handleBindingId: string | null;
   readonly projectedResultBindings: readonly {
@@ -209,8 +212,9 @@ const emitterIdentity = (
 
 const collectTimer = (input: TimerCollectionInput): void => {
   const { node, ownerCallableId, state, output, ancestors } = input;
-  const method = timerMethod(node.callee, state);
-  if (method === null) return;
+  const timer = timerMethod(node.callee, state);
+  if (timer === null) return;
+  const { method, identity } = timer;
   const kind = TIMER_SCHEDULE_METHODS.some((candidate) => candidate === method)
     ? "schedule"
     : "cancel";
@@ -223,6 +227,7 @@ const collectTimer = (input: TimerCollectionInput): void => {
     node,
     method,
     kind,
+    identity,
     ownerCallableId,
     handleBindingId:
       kind === "schedule"
@@ -275,38 +280,53 @@ const resolveTimers = (
           ? timerId(linked[0])
           : null,
       delayMilliseconds: timerDelay(candidate),
-      resolution:
-        candidate.kind === "schedule"
-          ? "complete"
-          : linked.length === 1 &&
-              !linked[0]?.projectedResultBindings.some(
-                ({ bindingId }) => bindingId === candidate.handleBindingId,
-              )
-            ? "complete"
-            : linked.length > 1
-              ? "partial"
-              : "unresolved",
+      resolution: timerResolution(candidate, linked),
     };
   });
+};
+
+const timerResolution = (
+  candidate: TimerCandidate,
+  linked: readonly TimerCandidate[],
+): JavaScriptSemanticTimerOperation["resolution"] => {
+  const resolution =
+    candidate.kind === "schedule"
+      ? "complete"
+      : linked.length === 1 &&
+          !linked[0]?.projectedResultBindings.some(
+            ({ bindingId }) => bindingId === candidate.handleBindingId,
+          )
+        ? "complete"
+        : linked.length > 1
+          ? "partial"
+          : "unresolved";
+  return resolution === "complete" && candidate.identity === "partial"
+    ? "partial"
+    : resolution;
 };
 
 const timerMethod = (
   callee: t.Node,
   state: JavaScriptSemanticAnalysisState,
-): JavaScriptSemanticTimerOperation["method"] | null => {
+): Pick<TimerCandidate, "method" | "identity"> | null => {
   if (t.isIdentifier(callee)) {
     const binding = resolveSemanticBindingState(state, callee, callee.name);
     if (binding === undefined) {
       const method = admittedTimerMethod(callee.name);
       if (method === null) return null;
-      return semanticResolutionBlocked(state, callee, callee.name)
-        ? null
-        : method;
+      // A visibly replaced global no longer schedules a Node timer.
+      const identity = semanticBuiltinGlobalResolution(
+        callee,
+        state,
+        callee.name,
+      );
+      return identity === null ? null : { method, identity };
     }
   }
-  return admittedTimerMethod(
+  const method = admittedTimerMethod(
     builtinDataEffectMethod(callee, state, ["timers", "node:timers"]) ?? "",
   );
+  return method === null ? null : { method, identity: "complete" };
 };
 const admittedTimerMethod = (
   value: string,
