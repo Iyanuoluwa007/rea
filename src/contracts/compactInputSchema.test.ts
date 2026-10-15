@@ -191,10 +191,19 @@ describe("compact advertised input schema", () => {
     const properties = schema.properties as Record<string, unknown>;
     expect(properties.normalized_result).toEqual({
       type: ["null", "boolean", "object", "array", "number", "string"],
+      items: {},
     });
     expect(properties.literal).toEqual({ const: {} });
     const validate = new Ajv2020({ strict: false }).compile(schema);
-    for (const normalized_result of [null, true, {}, [], 42, "result"])
+    for (const normalized_result of [
+      null,
+      true,
+      {},
+      [],
+      [[1], "x"],
+      42,
+      "result",
+    ])
       expect(validate({ normalized_result })).toBe(true);
   });
 
@@ -267,6 +276,7 @@ describe("compact input schema budget and reduction", () => {
         type: "array",
         items: {
           type: ["null", "boolean", "object", "array", "number", "string"],
+          items: {},
         },
       },
       label: { type: ["string", "null"] },
@@ -334,4 +344,34 @@ describe("compact input schema budget and reduction", () => {
     expect(presentation).toBe("inline");
     expect(serializedBytes(schema)).toBeLessThanOrEqual(13312);
   });
+});
+
+it("gives every advertised array type an item schema for strict clients", () => {
+  const arraysWithoutItems = (value: unknown): number => {
+    if (Array.isArray(value))
+      return value.reduce(
+        (count: number, child) => count + arraysWithoutItems(child),
+        0,
+      );
+    if (typeof value !== "object" || value === null) return 0;
+    const record = value as Record<string, unknown>;
+    const types = Array.isArray(record.type) ? record.type : [record.type];
+    return (
+      (types.includes("array") && record.items === undefined ? 1 : 0) +
+      Object.values(record).reduce(
+        (count: number, child) => count + arraysWithoutItems(child),
+        0,
+      )
+    );
+  };
+  for (const budget of [13312, 64]) {
+    const { schema } = compactAdvertisedInputSchema(
+      {
+        type: "object",
+        properties: { value: {}, values: { type: "array", items: {} } },
+      },
+      budget,
+    );
+    expect(arraysWithoutItems(schema), String(budget)).toBe(0);
+  }
 });

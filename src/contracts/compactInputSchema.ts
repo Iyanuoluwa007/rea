@@ -23,6 +23,9 @@ const jsonValueTypes = [
   "number",
   "string",
 ];
+// Strict clients such as VS Code reject an array type without `items`, so
+// the explicit any-value form also accepts every array element.
+const jsonValueSchema = { type: jsonValueTypes, items: {} };
 
 export type AdvertisedInputSchemaPresentation = "inline" | "reduced";
 
@@ -157,7 +160,7 @@ const inlineWithinBudget = (
       yield "]";
     } else if (isSchemaObject(value)) {
       if (position === "schema" && Object.keys(value).length === 0) {
-        yield JSON.stringify({ type: jsonValueTypes });
+        yield JSON.stringify(jsonValueSchema);
         return;
       }
       if (position === "schema" && typeof value.$ref === "string") {
@@ -293,9 +296,7 @@ const reduceToShallowProperties = (
           ...(type === undefined ? {} : { type }),
           // Reduced inputs intentionally omit nested validation, but clients
           // still require an item schema to accept an array declaration.
-          ...(types?.includes("array")
-            ? { items: { type: jsonValueTypes } }
-            : {}),
+          ...(types?.includes("array") ? { items: jsonValueSchema } : {}),
           ...description,
         },
       ];
