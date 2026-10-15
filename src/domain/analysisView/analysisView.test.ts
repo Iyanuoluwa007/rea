@@ -1,8 +1,10 @@
+import { boundedViewMessages } from "./analysisViewCoverage.js";
 import { expect, it } from "vitest";
 
 import { functionDossierSchema } from "../hopperValues.js";
 import { ghidraFunctionDossier } from "../ghidraValues.fixture.js";
 import { JAVASCRIPT_APPLICATION_EVIDENCE_EXAMPLE } from "../../contracts/javascript/javascriptRuntimeReconciliationExample.js";
+import { ARTIFACT_COMPARISON_EXAMPLE } from "../../contracts/artifactComparisonExample.js";
 import {
   analysisViewBindJavaScriptGraphs,
   analysisViewJavaScriptAnalysis,
@@ -24,6 +26,7 @@ import {
   pageViewCoverage,
 } from "./analysisViewCoverage.js";
 import { sourceMapReference } from "../javascript/javascriptApplicationGraph.fixture.js";
+import { createArtifactInspection } from "../artifactInspection.js";
 import { javascriptModulePath } from "./javascriptApplicationView.js";
 import {
   inspectAnalysisViewInputSchema,
@@ -159,6 +162,28 @@ it("preserves native API limitations and unavailable residual unknowns", () => {
   expect(available.value.limitations).toEqual(
     expect.arrayContaining(original.native_api.limitations),
   );
+});
+
+it("rejects artifact summary views when inspection substep coverage count disagrees", () => {
+  const source = ARTIFACT_COMPARISON_EXAMPLE.left;
+  const inspection = createArtifactInspection(source);
+  const parent: AnalysisViewParent = {
+    evidenceId: `ev_${"a".repeat(64)}`,
+    operation: "inspect_artifact",
+    normalizedResult: {
+      ...inspection,
+      coverage: {
+        ...inspection.coverage,
+        substeps_completed: inspection.substeps.length + 1,
+      },
+    },
+    subject: source.subject,
+    limitations: [],
+  };
+  expect(projectAnalysisView(parent, { kind: "summary" })).toMatchObject({
+    ok: false,
+    error: { _tag: "AnalysisInputError" },
+  });
 });
 
 it("pages every retained dossier collection and the native API record", () => {
@@ -717,6 +742,159 @@ it("retains semantic coverage and limitations in a summary", () => {
   });
 });
 
+it.each([63, 64, 65, 10_000])(
+  "bounds and deduplicates %i messages in JavaScript and layout views",
+  (count) => {
+    const messages = Array.from(
+      { length: count },
+      (_, index) => `Module ${String(index).padStart(5, "0")} was not parsed.`,
+    );
+    const analysis = analysisViewJavaScriptAnalysis();
+    const { graph_id: _graphId, ...semantic } = analysis.semantic_graph;
+    const parent = javascriptParent({
+      ...analysis,
+      limitations: messages,
+      semantic_graph: createJavaScriptSemanticGraph({
+        ...semantic,
+        limitations: messages.slice(0, 1),
+      }),
+    });
+    const duplicatedParent = { ...parent, limitations: messages };
+    const notice = (
+      omitted: number,
+      field: "limitations" | "unknowns",
+      evidenceId: string,
+    ) =>
+      `${String(omitted)} additional ${field} omitted from this view; consult source parent Evidence ${evidenceId} for the complete list (the caller-supplied record, or its retaining session).`;
+    for (const view of [
+      { kind: "summary" },
+      { kind: "page", collection: "modules", offset: 0, limit: 1 },
+    ] as const) {
+      const result = projectAnalysisView(duplicatedParent, view);
+      if (!result.ok) throw result.error;
+      if (count <= 65) {
+        expect(result.value.limitations).toEqual(messages);
+        expect(result.value.unknowns).toEqual(
+          [...messages, "semantic_graph.coverage.status is unknown"].sort(),
+        );
+      } else {
+        const limitations = result.value.limitations;
+        const unknowns = result.value.unknowns;
+        expect(limitations.length).toBeGreaterThan(65);
+        expect(limitations.at(-1)).toBe(
+          notice(
+            count - limitations.length + 1,
+            "limitations",
+            parent.evidenceId,
+          ),
+        );
+        expect(unknowns.length).toBeGreaterThan(65);
+        expect(unknowns.at(-1)).toBe(
+          notice(
+            count + 1 - unknowns.length + 1,
+            "unknowns",
+            parent.evidenceId,
+          ),
+        );
+      }
+    }
+    const layout = layoutParent();
+    const layoutWithMessages = {
+      ...layout,
+      limitations: messages,
+      normalizedResult: {
+        ...analysisViewLayoutFixture(),
+        limitations: messages,
+      },
+    };
+    for (const view of [
+      { kind: "summary" },
+      { kind: "page", collection: "sections", offset: 0, limit: 1 },
+    ] as const) {
+      const result = projectAnalysisView(layoutWithMessages, view);
+      if (!result.ok) throw result.error;
+      if (count <= 65) expect(result.value.limitations).toEqual(messages);
+      else {
+        expect(result.value.limitations.length).toBeGreaterThan(65);
+        expect(result.value.limitations.at(-1)).toBe(
+          notice(
+            count - result.value.limitations.length + 1,
+            "limitations",
+            layout.evidenceId,
+          ),
+        );
+      }
+    }
+  },
+);
+
+it.each(["partial", "unknown"] as const)(
+  "preserves %s parent graph completeness when a module page is exhausted",
+  (status) => {
+    const analysis = analysisViewJavaScriptAnalysis();
+    const first = analysis.graph.nodes[0];
+    if (first === undefined) throw new Error("missing module");
+    const unknown = createJavaScriptApplicationNode({
+      kind: "unknown",
+      identity: {
+        strategy: "observation-fingerprint",
+        stability: "observation-only",
+        observation_sha256: "8".repeat(64),
+        scope: "unclassified module",
+      },
+      observations: first.observations.map((observation) => ({
+        label: "unclassified module",
+        properties: {},
+        evidence: observation.evidence,
+      })),
+    });
+    const messages = [
+      ...Array.from(
+        { length: 65 },
+        (_, index) =>
+          `Module ${String(index).padStart(5, "0")} was not parsed.`,
+      ),
+      "z".repeat(300_000),
+    ];
+    const { graph_id: _applicationId, ...application } = analysis.graph;
+    const graph = createJavaScriptApplicationGraph({
+      ...application,
+      nodes: [...application.nodes, unknown],
+      limitations: messages.slice(0, 1),
+      coverage: { ...application.coverage, status, omitted_count: null },
+    });
+    const bound = analysisViewBindJavaScriptGraphs(analysis, graph);
+    const { graph_id: _semanticId, ...semantic } = bound.semantic_graph;
+    const parent = javascriptParent({
+      ...bound,
+      limitations: messages,
+      semantic_graph: createJavaScriptSemanticGraph({
+        ...semantic,
+        limitations: messages.slice(0, 1),
+      }),
+    });
+    for (const view of [
+      { kind: "page", collection: "modules", offset: 0, limit: 10 },
+      {
+        kind: "item",
+        collection: "modules",
+        selector: { path: "renderer.js" },
+      },
+    ] as const) {
+      const result = projectAnalysisView(parent, view);
+      if (!result.ok) throw result.error;
+      expect(result.value.coverage.exhausted).toBe(true);
+      expect(result.value.unknowns).toEqual([
+        "1 application graph unknowns remain in the parent Evidence.",
+        ...messages.slice(0, 65),
+        `graph.coverage.status is ${status}`,
+        "semantic_graph.coverage.status is unknown",
+        `1 additional unknowns omitted from this view; consult source parent Evidence ${parent.evidenceId} for the complete list (the caller-supplied record, or its retaining session).`,
+      ]);
+    }
+  },
+);
+
 it("does not match unavailable layout names using a display placeholder", () => {
   const layout = analysisViewLayoutFixture();
   const section = layout.sections[2];
@@ -791,6 +969,35 @@ it("rejects unsupported parent operations and incompatible collections", () => {
     ok: false,
     error: { _tag: "AnalysisInputError" },
   });
+});
+
+it("keeps the complete unique set when it fits the byte budget", () => {
+  const messages = ["a".repeat(2_400), "b".repeat(2_400)];
+  expect(
+    boundedViewMessages(messages, `ev_${"a".repeat(64)}`, "limitations"),
+  ).toEqual(messages);
+});
+
+it("does not impose a message-count cutoff below the byte budget", () => {
+  const messages = Array.from(
+    { length: 100 },
+    (_, index) => `message ${String(index).padStart(2, "0")}`,
+  );
+  expect(
+    boundedViewMessages(messages, `ev_${"a".repeat(64)}`, "limitations"),
+  ).toEqual(messages.toSorted());
+});
+
+it("bounds repeated view messages even when fewer than 64 source strings are huge", () => {
+  const oversized = ["\u0000".repeat(300_000), "\\".repeat(300_000)];
+  const projected = boundedViewMessages(
+    oversized,
+    `ev_${"a".repeat(64)}`,
+    "limitations",
+  );
+  expect(projected).toHaveLength(1);
+  expect(projected[0]).toContain("2 additional limitations omitted");
+  expect(Buffer.byteLength(JSON.stringify(projected))).toBeLessThan(256 * 1024);
 });
 
 it("preserves selected native facet unavailability instead of an exhausted empty page", () => {

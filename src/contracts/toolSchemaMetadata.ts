@@ -94,6 +94,14 @@ export const toolInputSchemaWithMetadata = <Contract extends ToolContract>(
     },
   );
 
+/** Return the same complete input JSON Schema projection registered on MCP. */
+export const advertisedInputJsonSchema = <Contract extends ToolContract>(
+  contract: Contract,
+): Record<string, unknown> =>
+  toolInputSchemaWithMetadata(contract)["~standard"].jsonSchema.input({
+    target: "draft-2020-12",
+  }) as Record<string, unknown>;
+
 /** Share output definitions and content-bound validator identities on the wire. */
 export const toolOutputSchemaWithMetadata = <Contract extends ToolContract>(
   contract: Contract,
@@ -138,7 +146,10 @@ export const transformAdvertisedInputJsonSchema = <Schema>(
   const byTarget = new Map<string, Record<string, unknown>>();
   const transformedInput = (options: unknown): unknown => {
     const target = Reflect.get(options as object, "target");
-    if (typeof target === "string") {
+    const cacheable =
+      typeof target === "string" &&
+      Reflect.get(options as object, "libraryOptions") === undefined;
+    if (cacheable) {
       const cached = byTarget.get(target);
       if (cached !== undefined) return cached;
     }
@@ -146,7 +157,7 @@ export const transformAdvertisedInputJsonSchema = <Schema>(
     const transformed = isSchemaRecord(projected)
       ? transform(projected)
       : projected;
-    if (typeof target === "string" && isSchemaRecord(transformed))
+    if (cacheable && isSchemaRecord(transformed))
       byTarget.set(target, transformed);
     return transformed;
   };

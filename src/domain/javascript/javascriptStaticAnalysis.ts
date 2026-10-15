@@ -25,6 +25,7 @@ import {
   inspectRouteProperty,
   inspectRoleProperty,
   inspectRpcNode,
+  indexVitePreloadDependencyTable,
 } from "./javascriptStaticAnalysisCalls.js";
 import {
   inspectBundlerRegistration,
@@ -41,10 +42,7 @@ import type { JavaScriptStaticAnalysis } from "./javascriptStaticAnalysisTypes.j
 import type { JavaScriptSemanticAnalysisState } from "./javascriptSemanticState.js";
 import {
   indexJavaScriptElectronIdentitySteps,
-  indexJavaScriptBindingsSteps,
-  classifyParsedJavaScriptRpcClientRootsSteps,
-  classifyParsedJavaScriptOpenReceivers,
-  type JavaScriptOpenReceiverFact,
+  indexJavaScriptBindingsWithReceiversSteps,
 } from "./javascriptSemanticAnalysis.js";
 import {
   parseJavaScriptSource,
@@ -66,44 +64,38 @@ export const analyzeJavaScriptStaticSource = (
   const file = parseJavaScriptSource(source);
   return file === null
     ? failedJavaScriptStaticAnalysis()
-    : analyzeParsedJavaScriptStaticSource(
-        source,
-        file,
-        classifyParsedJavaScriptOpenReceivers(file),
-      );
+    : analyzeParsedJavaScriptStaticSource(source, file);
 };
 
 /** Recover static structure from an already parsed JavaScript artifact. */
 export const analyzeParsedJavaScriptStaticSource = (
   source: string,
   file: ParsedJavaScriptSource,
-  openReceiverFacts?: ReadonlyMap<number, JavaScriptOpenReceiverFact>,
 ): JavaScriptStaticAnalysis =>
-  completeSemanticSteps(
-    analyzeParsedJavaScriptStaticSourceSteps(source, file, openReceiverFacts),
-  );
+  completeSemanticSteps(analyzeParsedJavaScriptStaticSourceSteps(source, file));
 
 /** Static analysis that yields during its source traversal; results are unchanged. */
 export function* analyzeParsedJavaScriptStaticSourceSteps(
   source: string,
   file: ParsedJavaScriptSource,
-  openReceiverFacts?: ReadonlyMap<number, JavaScriptOpenReceiverFact>,
 ): Generator<void, JavaScriptStaticAnalysis> {
   const accumulator = createJavaScriptAnalysisAccumulator(source.length);
-  const bindings = yield* indexJavaScriptBindingsSteps(file.program);
+  // One definitions pass serves receiver classification and binding lookup.
+  const { bindings, receivers } =
+    yield* indexJavaScriptBindingsWithReceiversSteps(file.program);
   const electronIdentity = yield* indexJavaScriptElectronIdentitySteps(
     file.program,
     bindings,
   );
-  const clientRoots = yield* classifyParsedJavaScriptRpcClientRootsSteps(file);
   yield* traverseStaticSourceSteps(
     file,
     {
       source,
       accumulator,
-      ...(openReceiverFacts === undefined ? {} : { openReceiverFacts }),
+      vitePreloadDependencyTable: indexVitePreloadDependencyTable(file.program),
+      openReceiverFacts: receivers.openReceivers,
       electronBindings: electronIdentity.bindings,
-      rpcScan: createJavaScriptRpcScan(source, clientRoots),
+      rpcScan: createJavaScriptRpcScan(source, receivers.rpcClientRoots),
     },
     bindings,
   );

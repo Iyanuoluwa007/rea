@@ -1,6 +1,7 @@
 """Exercise automatic route discovery and mistakes that break search metadata."""
 
 import contextlib
+import errno
 import importlib.util
 import io
 import json
@@ -9,13 +10,14 @@ import shutil
 import tempfile
 from threading import Thread
 import unittest
+from unittest.mock import patch
 from http.server import ThreadingHTTPServer
 from urllib.error import HTTPError
 from urllib.request import urlopen
 import xml.etree.ElementTree as ET
 
 import polib
-from website_i18n import Document, build_translations, checked_catalog, extract_catalogs, languages, reading_pages, read_runtime
+from website_i18n import Document, build_translations, checked_catalog, extract_catalogs, languages, prose_units, reading_pages, read_runtime
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -137,6 +139,106 @@ class WebsiteSearchChecks(unittest.TestCase):
 
 class WebsiteMaintenanceChecks(unittest.TestCase):
     """Exercise contributor edits and the static preview through real consumers."""
+
+    def test_contributors_render_from_snapshot_and_reject_drift_without_rewriting(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name in ("public", "templates"):
+                shutil.copytree(ROOT / "website" / name, root / "website" / name)
+            page = root / "website/public/contributors/index.html"
+            snapshot = root / "website/public/contributors/people.json"
+            data = json.loads(snapshot.read_text())
+            people = data["contributors"][:3]
+            data["contributors"] = list(reversed(people))
+            data["updated"] = "2026-10-15"
+            snapshot.write_text(json.dumps(data))
+            original = page.read_text()
+            with self.assertRaisesRegex(ValueError, "Shared HTML is stale"):
+                WEBSITE.sync_pages(root, check=True)
+            self.assertEqual(page.read_text(), original)
+            WEBSITE.sync_pages(root)
+            source = page.read_text()
+            doc = Document(source)
+            cards = [node for node in doc.nodes if "data-contributor" in node.attrs]
+            self.assertEqual([node.attrs["data-contributor"] for node in cards], sorted(
+                (person["login"] for person in people), key=str.casefold,
+            ))
+            links = [node.attrs["href"] for node in doc.nodes if node.attrs.get("class") == "contributor-card"]
+            self.assertCountEqual(links, [person["html_url"] for person in people])
+            self.assertIn('<time datetime="2026-10-15" translate="no">2026-10-15</time>', source)
+            self.assertEqual(WEBSITE.sync_pages(root), [])
+            translated_units = [unit[1] for unit in prose_units(source, "contributors/index.html")]
+            for person in people:
+                self.assertFalse(any(person["login"] in unit for unit in translated_units))
+
+    def test_contributor_refresh_collects_all_pages_and_preserves_snapshot_on_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            snapshot = root / "website/public/contributors/people.json"
+            snapshot.parent.mkdir(parents=True)
+            original = (ROOT / "website/public/contributors/people.json").read_text()
+            snapshot.write_text(original)
+            people = json.loads(original)["contributors"][:3]
+            response = WEBSITE.subprocess.CompletedProcess([], 0, stdout=json.dumps(people[:2]) + "\n" + json.dumps(people[2:]))
+            with patch.object(WEBSITE.subprocess, "run", return_value=response) as api:
+                WEBSITE.refresh_contributors(root)
+            self.assertIn("--paginate", api.call_args.args[0])
+            self.assertEqual(json.loads(snapshot.read_text())["contributors"], people)
+            self.assertEqual(set(snapshot.parent.iterdir()), {snapshot})
+            good = snapshot.read_text()
+            for output in (json.dumps(people) + "\n[", json.dumps(people + people), "[]", '{"message":"API error"}'):
+                with self.subTest(output=output), patch.object(WEBSITE.subprocess, "run", return_value=WEBSITE.subprocess.CompletedProcess([], 0, stdout=output)):
+                    with self.assertRaises(ValueError):
+                        WEBSITE.refresh_contributors(root)
+                    self.assertEqual(snapshot.read_text(), good)
+            with patch.object(WEBSITE.subprocess, "run", side_effect=WEBSITE.subprocess.CalledProcessError(1, ["gh"])):
+                with self.assertRaises(WEBSITE.subprocess.CalledProcessError):
+                    WEBSITE.refresh_contributors(root)
+            self.assertEqual(snapshot.read_text(), good)
+
+    def test_contributor_refresh_preserves_snapshot_and_cleans_staging_on_save_failure(self):
+        people = json.loads((ROOT / "website/public/contributors/people.json").read_text())["contributors"][:2]
+        response = WEBSITE.subprocess.CompletedProcess([], 0, stdout=json.dumps(people))
+        write_text = Path.write_text
+
+        def partial_write(path, text, *args, **kwargs):
+            write_text(path, text[:20], *args, **kwargs)
+            raise OSError(errno.ENOSPC, "injected partial write", str(path))
+
+        failures = (
+            ("partial write", patch.object(
+                Path, "write_text", autospec=True, side_effect=partial_write,
+            )),
+            ("replace", patch.object(
+                Path, "replace", autospec=True,
+                side_effect=PermissionError(errno.EACCES, "injected replace failure"),
+            )),
+        )
+        for name, failure in failures:
+            with self.subTest(failure=name), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                snapshot = root / "website/public/contributors/people.json"
+                snapshot.parent.mkdir(parents=True)
+                snapshot.write_bytes(json.dumps({
+                    "repository": "morluto/rea", "updated": "2026-10-14", "contributors": people[:1],
+                }).encode("utf-8"))
+                before = snapshot.read_bytes()
+                with patch.object(WEBSITE.subprocess, "run", return_value=response), failure as save:
+                    with self.assertRaises(OSError):
+                        WEBSITE.refresh_contributors(root)
+                self.assertEqual(save.call_count, 1)
+                self.assertEqual(snapshot.read_bytes(), before)
+                self.assertEqual(set(snapshot.parent.iterdir()), {snapshot})
+
+    def test_contributor_snapshot_rejects_malformed_identity_and_unsafe_links(self):
+        original = json.loads((ROOT / "website/public/contributors/people.json").read_text())
+        for field, value in (("id", True), ("id", 0), ("login", ""), ("type", "unknown"),
+                             ("html_url", "javascript:alert(1)"), ("html_url", "https://github.com.evil.test/person"),
+                             ("avatar_url", "https://token@avatars.githubusercontent.com/u/1")):
+            with self.subTest(field=field, value=value):
+                data = {**original, "contributors": [{**original["contributors"][0], field: value}]}
+                with self.assertRaises(ValueError):
+                    WEBSITE.checked_contributors(data)
 
     def test_shared_edits_preserve_body_and_catch_drift_before_rewriting(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -314,12 +416,21 @@ class WebsiteTranslationChecks(unittest.TestCase):
 
     def test_broken_placeholders_and_inline_markup_fail_before_replacing_preview(self):
         with self.translated_project() as root:
+            page = root / "website/public/index.html"
+            page.write_text(page.read_text().replace(
+                "</main>",
+                '<p>Translation test <a href="get-started/">read more</a>.</p></main>',
+            ))
+            extract_catalogs(root)
+            path = root / "website/locales/zh-CN/messages.po"
+            catalog = polib.pofile(path)
+            entry = catalog.find("Translation test {ph0}read more{ph1}.", msgctxt="page:index.html")
+            self.assertIsNotNone(entry)
+            entry.msgstr = "翻译测试：{ph0}继续阅读{ph1}。"
+            catalog.save(path)
             site = root / "website/_site"
             build_translations(root, site)
             before = (site / "zh-CN/index.html").read_bytes()
-            path = root / "website/locales/zh-CN/messages.po"
-            catalog = polib.pofile(path)
-            entry = catalog.find("Already know RE? {ph0}Skip to analysis guides →{ph1}", msgctxt="page:index.html")
             original = entry.msgstr
             for bad, reason in (("丢失链接", "changed placeholders"), ("{ph1}错误的链接{ph0}", "invalid inline markup")):
                 with self.subTest(reason=reason):

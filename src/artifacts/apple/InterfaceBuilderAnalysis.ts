@@ -7,7 +7,10 @@ import {
   isUIKitRuntimeConnectionClass,
 } from "../../domain/apple/interfaceBuilderKeyedArchive.js";
 import { DirectoryArtifactReader } from "../DirectoryArtifactReader.js";
-import { projectPlistValue } from "../../domain/apple/plistValue.js";
+import {
+  projectPlistValue,
+  unknownDateLimitation,
+} from "../../domain/apple/plistValue.js";
 import {
   omittedPrototypeKeysLimitation,
   parseXmlPropertyList,
@@ -58,6 +61,7 @@ export const analyzeInterfaceBuilderBundle = async (input: {
   const incompleteHierarchies = new Map<string, number>();
   const unresolvedConnections = new Map<string, number>();
   const prototypeKeyOmissions = new Map<string, number | null>();
+  const unknownDates = new Map<string, number>();
   let omitted = 0;
   let attempted = 0;
   let aggregateInputBytes = 0;
@@ -131,16 +135,21 @@ export const analyzeInterfaceBuilderBundle = async (input: {
           binaryPrototypeKeyObserved =
             decodedReservation.binaryPrototypeKeyObserved;
         }
-        const { value: raw, omittedPrototypeKeys } =
-          nib === null
-            ? decodePlist(bytes, xmlText, binaryPrototypeKeyObserved)
-            : { value: nib.raw, omittedPrototypeKeys: 0 };
+        const {
+          value: raw,
+          omittedPrototypeKeys,
+          unknownDateCount,
+        } = nib === null
+          ? decodePlist(bytes, xmlText, binaryPrototypeKeyObserved)
+          : { value: nib.raw, omittedPrototypeKeys: 0, unknownDateCount: 0 };
         if (nib !== null && nib.omitted > 0)
           incompleteHierarchies.set(entry.path, nib.omitted);
         if (nib !== null && nib.unresolvedConnections > 0)
           unresolvedConnections.set(entry.path, nib.unresolvedConnections);
         if (omittedPrototypeKeys !== 0)
           prototypeKeyOmissions.set(entry.path, omittedPrototypeKeys);
+        if (unknownDateCount !== 0)
+          unknownDates.set(entry.path, unknownDateCount);
         const documentHash = createHash("sha256").update(bytes).digest("hex");
         documents.push({
           relativePath: entry.path,
@@ -149,6 +158,9 @@ export const analyzeInterfaceBuilderBundle = async (input: {
             ? "storyboard_scene"
             : "nib",
           raw,
+          ...(nib === null || nib.omitted === 0
+            ? {}
+            : { omittedSerializedHierarchyReferences: nib.omitted }),
         });
       } catch (cause: unknown) {
         if (input.signal?.aborted === true) throw cause;
@@ -175,6 +187,7 @@ export const analyzeInterfaceBuilderBundle = async (input: {
     incompleteHierarchies,
     unresolvedConnections,
     prototypeKeyOmissions,
+    unknownDates,
     invalid,
     omittedArchives,
     unreportedOmittedArchives,
@@ -243,6 +256,7 @@ const finalizeHierarchyCoverage = (
     incompleteHierarchies: ReadonlyMap<string, number>;
     unresolvedConnections: ReadonlyMap<string, number>;
     prototypeKeyOmissions: ReadonlyMap<string, number | null>;
+    unknownDates: ReadonlyMap<string, number>;
     invalid: readonly string[];
     omittedArchives: readonly { path: string; reason: string }[];
     unreportedOmittedArchives: number;
@@ -254,6 +268,7 @@ const finalizeHierarchyCoverage = (
     incompleteHierarchies,
     unresolvedConnections,
     prototypeKeyOmissions,
+    unknownDates,
     invalid,
     omittedArchives,
     unreportedOmittedArchives,
@@ -266,34 +281,14 @@ const finalizeHierarchyCoverage = (
     ...result,
     documents: result.documents.map((document) => ({
       ...document,
-      // The dictionary parser only sees connectors that were projected, so the
-      // omission recorded where an ownerless connector was dropped has to be
-      // added here for this producer to report the same document count as the
-      // keyed-archive producer for the same recognized connector.
       connection_count:
         document.connection_count +
         (unresolvedConnections.get(document.relative_path) ?? 0),
-      hierarchy_complete:
-        document.hierarchy_complete &&
-        !incompleteHierarchies.has(document.relative_path),
     })),
     graph: {
       ...result.graph,
       coverage: [
         ...result.graph.coverage.map((facet) => {
-          const omittedHierarchy = incompleteHierarchies.get(
-            facet.facet.replace(/^hierarchy:/u, ""),
-          );
-          if (
-            facet.facet.startsWith("hierarchy:") &&
-            omittedHierarchy !== undefined
-          )
-            return {
-              ...facet,
-              status: "partial" as const,
-              reason: "serialized_view_hierarchy_incomplete",
-              omitted: facet.omitted + omittedHierarchy,
-            };
           const omittedConnection = unresolvedConnections.get(
             facet.facet.replace(/^connections:/u, ""),
           );
@@ -336,7 +331,6 @@ const finalizeHierarchyCoverage = (
         result.graph.truncated ||
         counts.omitted > 0 ||
         archiveDecodePartial ||
-        incompleteHierarchies.size > 0 ||
         unresolvedConnections.size > 0,
     },
     limitations: [
@@ -359,6 +353,9 @@ const finalizeHierarchyCoverage = (
           ]),
       ...[...prototypeKeyOmissions].map(
         ([path, count]) => `${path}: ${omittedPrototypeKeysLimitation(count)}`,
+      ),
+      ...[...unknownDates].map(
+        ([path, count]) => `${path}: ${unknownDateLimitation(count)}`,
       ),
       ...omittedArchives.map(
         ({ path, reason }) =>
@@ -711,6 +708,7 @@ const decodePlist = (
 ): {
   readonly value: JsonValue;
   readonly omittedPrototypeKeys: number | null;
+  readonly unknownDateCount: number;
 } => {
   const binary = hasBinaryPlistSignature(bytes);
   const { value, omittedPrototypeKeys } = binary
@@ -719,5 +717,10 @@ const decodePlist = (
         omittedPrototypeKeys: binaryPrototypeKeyObserved ? null : 0,
       }
     : parseXmlPropertyList(xmlText ?? decodeXmlPlistText(bytes));
-  return { value: projectPlistValue(value).value, omittedPrototypeKeys };
+  const projected = projectPlistValue(value);
+  return {
+    value: projected.value,
+    omittedPrototypeKeys,
+    unknownDateCount: projected.unknownDateCount,
+  };
 };

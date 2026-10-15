@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { chmod, lstat, mkdir, realpath, rm, rmdir } from "node:fs/promises";
+import { chmod, mkdir, open, realpath, rm, rmdir } from "node:fs/promises";
+import { constants as fsConstants } from "node:fs";
 import {
   createConnection,
   createServer,
@@ -16,6 +17,8 @@ interface HopperTargetLeaseOwner {
 }
 
 export interface HopperTargetLease {
+  /** Bound socket identity for cleanup diagnostics; omission remains unknown. */
+  readonly socketPath?: string;
   readonly release: () => Promise<void>;
 }
 
@@ -64,6 +67,21 @@ export const acquireLinuxHopperApplicationLease = (input: {
   readonly directory?: string;
 }): Promise<HopperTargetLeaseAcquisition> =>
   acquireLease({ ...input, identity: { application: "linux-hopper-demo" } });
+
+/** Serialize approved publication/repair of one canonical signed-package entry. */
+export const acquireHopperReleaseCacheLease = async (input: {
+  readonly cacheDirectory: string;
+  readonly launcherSha256: string;
+  readonly runId: string;
+}): Promise<HopperTargetLeaseAcquisition> =>
+  acquireLease({
+    runId: input.runId,
+    identity: {
+      cacheDirectory: await realpath(input.cacheDirectory),
+      launcherSha256: input.launcherSha256,
+      operation: "signed-package-retention",
+    },
+  });
 
 const acquireLease = async (input: {
   readonly identity: Readonly<Record<string, unknown>>;
@@ -152,6 +170,7 @@ const tryAcquireLease = async (
   return {
     acquired: true,
     lease: {
+      socketPath,
       release: async () => {
         if (released) return;
         // Node removes a bound Unix socket on close. A second unlink here
@@ -164,27 +183,69 @@ const tryAcquireLease = async (
 };
 
 const ensureLeaseDirectory = async (directory: string): Promise<void> => {
-  let directoryStat: Awaited<ReturnType<typeof lstat>>;
   try {
     await mkdir(directory, { recursive: true, mode: 0o700 });
-    directoryStat = await lstat(directory);
   } catch (cause: unknown) {
     throw new HopperStartError({
       cause,
-      userMessage:
-        "REA could not create or inspect its private Hopper lease directory.",
+      userMessage: "REA could not create its private Hopper lease directory.",
     });
   }
-  if (
-    directoryStat.isSymbolicLink() ||
-    directoryStat.isDirectory() === false ||
-    (process.getuid !== undefined && directoryStat.uid !== process.getuid())
-  )
+  // Use O_DIRECTORY|O_NOFOLLOW to open the directory without following symlinks,
+  // then inspect and secure that descriptor. Later socket operations still use
+  // the path and are not made atomic by this directory validation.
+  let handle;
+  try {
+    handle = await open(
+      directory,
+      fsConstants.O_RDONLY |
+        (fsConstants.O_DIRECTORY ?? 0) |
+        (fsConstants.O_NOFOLLOW ?? 0),
+    );
+    const directoryStat = await handle.stat();
+    if (
+      directoryStat.isSymbolicLink() ||
+      directoryStat.isDirectory() === false ||
+      (process.getuid !== undefined && directoryStat.uid !== process.getuid())
+    )
+      throw new HopperStartError({
+        userMessage:
+          "REA's Hopper lease directory is not a private directory owned by this user.",
+      });
+    // POSIX permission hardening: chmod on the already-opened descriptor avoids
+    // a second TOCTOU window where the directory could be swapped between check
+    // and permission fix. Windows DACL-based security is handled separately.
+    const posixPermissionsApply = process.getuid !== undefined;
+    if (posixPermissionsApply && (directoryStat.mode & 0o077) !== 0) {
+      await handle.chmod(0o700);
+      // Re-verify permissions on the same opened directory.
+      const afterChmod = await handle.stat();
+      if (
+        afterChmod.isSymbolicLink() ||
+        afterChmod.isDirectory() === false ||
+        (afterChmod.mode & 0o077) !== 0
+      )
+        throw new HopperStartError({
+          userMessage:
+            "REA's Hopper lease directory permissions could not be secured.",
+        });
+    }
+  } catch (cause: unknown) {
+    if (cause instanceof HopperStartError) throw cause;
+    const accessDenied =
+      process.getuid !== undefined &&
+      cause instanceof Error &&
+      "code" in cause &&
+      cause.code === "EACCES";
     throw new HopperStartError({
-      userMessage:
-        "REA's Hopper lease directory is not a private directory owned by this user.",
+      cause,
+      userMessage: accessDenied
+        ? `REA could not access its Hopper lease directory at ${JSON.stringify(directory)}. Check its ownership and parent-directory access. For a directory you own, restore owner-only read, write, and search permissions (0700), then retry.`
+        : "REA could not inspect its private Hopper lease directory.",
     });
-  if ((directoryStat.mode & 0o077) !== 0) await chmod(directory, 0o700);
+  } finally {
+    await handle?.close();
+  }
 };
 
 const bind = (server: Server, socketPath: string): Promise<boolean> =>

@@ -37,6 +37,8 @@ import {
   runWithExecutionLimits,
 } from "./PlaywrightElectronActiveActions.js";
 import { projectElectronActiveCapture } from "./PlaywrightElectronActiveProjection.js";
+import { readElectronFuseImage } from "../electron/ElectronFuseReader.js";
+import { assertNodeCliInspectArgumentsSupported } from "./PlaywrightElectronActiveFuses.js";
 
 const OPERATION = "capture_electron_scenario" as const;
 const STARTUP_TIMEOUT_MS = 60_000;
@@ -61,6 +63,7 @@ export class PlaywrightElectronActiveProvider implements ElectronActiveObservati
     // Load Playwright only when a capture launches; MCP startup stays off its module graph.
     private readonly launch: typeof electron.launch = async (options) =>
       (await import("playwright-core"))._electron.launch(options),
+    private readonly readFuseImage: typeof readElectronFuseImage = readElectronFuseImage,
   ) {}
 
   identity(): ProviderIdentity {
@@ -92,17 +95,28 @@ export class PlaywrightElectronActiveProvider implements ElectronActiveObservati
         application: input.application_path,
         root: input.application_root,
       };
+      await runWithExecutionLimits(
+        assertNodeCliInspectArgumentsSupported(paths.executable, {
+          ...(options.signal === undefined ? {} : { signal: options.signal }),
+          readFuseImage: this.readFuseImage,
+        }),
+        options.signal,
+        startupDeadline,
+      );
       const captureBaseline =
         await systemProcessOwnershipHost.captureBaseline?.(options.signal);
       if (options.signal?.aborted)
         throw new BrowserObservationError(OPERATION, "cancelled");
-      application = await this.launch({
+      const launchOptions: Parameters<typeof electron.launch>[0] = {
         executablePath: paths.executable,
         cwd: paths.root,
         env: safeElectronEnvironment(this.environment, runId),
         args: ["-r", hookPath, paths.application, ...input.args],
         timeout: Math.max(1, startupDeadline - performance.now()),
-      });
+      };
+      application = await containLaunchRejections(() =>
+        this.launch(launchOptions),
+      );
       const leaderPid = application.process().pid;
       if (
         typeof leaderPid !== "number" ||
@@ -142,11 +156,7 @@ export class PlaywrightElectronActiveProvider implements ElectronActiveObservati
           )
         : ok(capture);
     } catch (cause: unknown) {
-      if (
-        options.signal?.aborted &&
-        paths !== undefined &&
-        initialState !== undefined
-      ) {
+      if (paths !== undefined && initialState !== undefined) {
         const retainedCapture = projectElectronActiveCapture(
           paths,
           actions,
@@ -156,25 +166,33 @@ export class PlaywrightElectronActiveProvider implements ElectronActiveObservati
           ...retainedCapture,
           limitations: [
             ...retainedCapture.limitations,
-            `Final Electron state was unavailable after cancellation: ${cause instanceof Error ? cause.message : String(cause)}. Windows, metrics, IPC, and timeline are the snapshot collected before actions and may omit their effects.`,
+            `Capture stopped after the initial pre-action snapshot: ${cause instanceof Error ? cause.message : String(cause)}. Final Windows, metrics, IPC, and timeline state is unknown; the retained snapshot may omit action effects.`,
           ],
         };
       }
-      outcome = err(
-        options.signal?.aborted === true
-          ? new BrowserObservationError(OPERATION, "cancelled", {
-              cause,
-              ...(capture === undefined
-                ? {}
-                : {
-                    partialObservation: {
-                      kind: "electron-active-observation" as const,
-                      capture,
-                    },
-                  }),
-            })
-          : providerError(cause),
-      );
+      if (options.signal?.aborted === true)
+        outcome = err(
+          new BrowserObservationError(OPERATION, "cancelled", {
+            cause,
+            ...(capture === undefined
+              ? {}
+              : {
+                  partialObservation: {
+                    kind: "electron-active-observation" as const,
+                    capture,
+                  },
+                }),
+          }),
+        );
+      else {
+        const error = providerError(cause);
+        if (capture !== undefined)
+          error.retainPartialObservation({
+            kind: "electron-active-observation",
+            capture,
+          });
+        outcome = err(error);
+      }
     }
     if (application !== undefined) {
       if (ownership !== undefined) {
@@ -355,9 +373,10 @@ export const cleanupElectronProcesses = async (
   };
 };
 
-const safeElectronEnvironment = (
+export const safeElectronEnvironment = (
   environment: Readonly<Record<string, string | undefined>>,
   runId: string,
+  platform = process.platform,
 ): Record<string, string> =>
   Object.fromEntries([
     ...[
@@ -369,6 +388,23 @@ const safeElectronEnvironment = (
       "USER",
       "DISPLAY",
       "WAYLAND_DISPLAY",
+      ...(platform === "win32"
+        ? [
+            "SYSTEMROOT",
+            "TEMP",
+            "APPDATA",
+            "LOCALAPPDATA",
+            "USERPROFILE",
+            "COMSPEC",
+            "PATHEXT",
+            "PROGRAMDATA",
+            "ALLUSERSPROFILE",
+            "USERNAME",
+            "SYSTEMDRIVE",
+            "HOMEDRIVE",
+            "HOMEPATH",
+          ]
+        : []),
     ]
       .map((name) => [name, environment[name]] as const)
       .filter(
@@ -376,6 +412,88 @@ const safeElectronEnvironment = (
       ),
     ["REA_PROCESS_RUN_ID", runId] as const,
   ]);
+
+const PLAYWRIGHT_INTERNAL_FRAME = /playwright-core[\\/]lib[\\/]/;
+interface LaunchRejectionScope {
+  failure?: unknown;
+}
+const activeLaunches = new Set<LaunchRejectionScope>();
+const heldLaunchRejections = new Map<
+  Promise<unknown>,
+  {
+    readonly reason: Error;
+    readonly candidates: Set<LaunchRejectionScope>;
+    readonly hadExternalListener: boolean;
+  }
+>();
+
+const holdLaunchRejection = (
+  reason: unknown,
+  promise: Promise<unknown>,
+): void => {
+  if (
+    !(reason instanceof Error) ||
+    !PLAYWRIGHT_INTERNAL_FRAME.test(reason.stack ?? "")
+  )
+    throw reason;
+  if (!heldLaunchRejections.has(promise))
+    heldLaunchRejections.set(promise, {
+      reason,
+      candidates: new Set(activeLaunches),
+      hadExternalListener: process
+        .listeners("unhandledRejection")
+        .some((listener) => listener !== holdLaunchRejection),
+    });
+};
+
+const forwardLaunchRejection = (
+  reason: Error,
+  hadExternalListener: boolean,
+): void => {
+  // Listeners present at the original event already observed it. When the
+  // holding listener was the only listener, restore Node's fatal behavior.
+  if (!hadExternalListener)
+    process.nextTick(() => {
+      throw reason;
+    });
+};
+
+/** Playwright leaves rejected launch promises unhandled; absorb only those that repeat this launch's failure. */
+const containLaunchRejections = async <T>(
+  launch: () => Promise<T>,
+): Promise<T> => {
+  const scope: LaunchRejectionScope = {};
+  if (activeLaunches.size === 0)
+    process.on("unhandledRejection", holdLaunchRejection);
+  activeLaunches.add(scope);
+  try {
+    return await launch();
+  } catch (cause: unknown) {
+    scope.failure = cause;
+    throw cause;
+  } finally {
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    activeLaunches.delete(scope);
+    if (activeLaunches.size === 0)
+      process.off("unhandledRejection", holdLaunchRejection);
+    for (const [
+      promise,
+      { reason, candidates, hadExternalListener },
+    ] of heldLaunchRejections) {
+      if (!candidates.delete(scope)) continue;
+      if (
+        scope.failure instanceof Error &&
+        reason.message !== "" &&
+        scope.failure.message.includes(reason.message)
+      )
+        heldLaunchRejections.delete(promise);
+      else if (candidates.size === 0) {
+        heldLaunchRejections.delete(promise);
+        forwardLaunchRejection(reason, hadExternalListener);
+      }
+    }
+  }
+};
 
 const providerError = (cause: unknown): AnalysisError =>
   cause instanceof AnalysisError

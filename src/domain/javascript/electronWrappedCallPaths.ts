@@ -1,4 +1,5 @@
 import * as t from "@babel/types";
+import { runtimeFunctionParameters } from "./javascriptAstValues.js";
 import { JavaScriptSymbolicBindings } from "./javascriptSymbolicBindings.js";
 import {
   symbolicVariants,
@@ -35,11 +36,41 @@ import {
   symbolicDefiniteExit,
   symbolicLogicalRight,
 } from "./javascriptSymbolicControlFlow.js";
+import { compareUnicodeCodePoints } from "../unicodeCodePointOrder.js";
 
 const callLabel = (node: t.Node): string =>
   t.isSequenceExpression(node)
     ? callLabel(node.expressions.at(-1) ?? node)
     : calleeName(node) || "local call";
+
+const ipcEndpointKey = (value: ElectronIpcFinding): string =>
+  JSON.stringify([value.side, value.operation, value.channel, value.location]);
+
+/** Duplicate evidence already recorded for one endpoint and call site. */
+interface IpcEndpointFacts {
+  // A directly observed transmission stays one fact however it is reached.
+  observedTransmission: boolean;
+  readonly invocations: Set<string>;
+}
+
+const ipcInvocationKey = (location: unknown): string =>
+  String(JSON.stringify(location));
+
+const indexIpcFinding = (
+  index: Map<string, IpcEndpointFacts>,
+  value: ElectronIpcFinding,
+): void => {
+  const key = ipcEndpointKey(value);
+  let facts = index.get(key);
+  if (facts === undefined) {
+    facts = { observedTransmission: false, invocations: new Set() };
+    index.set(key, facts);
+  }
+  facts.observedTransmission ||=
+    value.resolution_basis === undefined &&
+    (value.mode === "send" || value.mode === "invoke");
+  facts.invocations.add(ipcInvocationKey(value.invocation_location));
+};
 
 interface PathContext {
   readonly entryNode: t.Node;
@@ -106,6 +137,32 @@ export const collectElectronWrappedCallPaths = (
       ],
     };
   };
+  const sequentialFallthrough = (
+    statement: t.Statement,
+    env: SymbolicEnvironment,
+    context: PathContext,
+  ): { readonly continues: boolean; readonly context: PathContext } => {
+    if (symbolicDefiniteExit(statement)) return { continues: false, context };
+    if (!t.isIfStatement(statement)) return { continues: true, context };
+    const truth = symbolicTruth(resolver.evaluate(statement.test, env));
+    if (truth !== undefined)
+      return symbolicDefiniteExit(
+        truth ? statement.consequent : statement.alternate,
+      )
+        ? { continues: false, context }
+        : { continues: true, context };
+    if (symbolicDefiniteExit(statement.consequent))
+      return {
+        continues: true,
+        context: condition(context, statement.test, false),
+      };
+    if (symbolicDefiniteExit(statement.alternate))
+      return {
+        continues: true,
+        context: condition(context, statement.test),
+      };
+    return { continues: true, context };
+  };
   const metadataContext = (
     context: PathContext,
     value: SymbolicValue,
@@ -120,6 +177,16 @@ export const collectElectronWrappedCallPaths = (
         context,
       ) ?? context
     );
+  };
+  // Duplicate checks consult only facts at the same endpoint and call site.
+  // Scanning every prior fact made bundles with many registrations quadratic.
+  let ipcByEndpoint: Map<string, IpcEndpointFacts> | undefined;
+  const ipcAtEndpoint = (): Map<string, IpcEndpointFacts> => {
+    if (ipcByEndpoint !== undefined) return ipcByEndpoint;
+    ipcByEndpoint = new Map();
+    for (const { value } of accumulator.ipc)
+      indexIpcFinding(ipcByEndpoint, value);
+    return ipcByEndpoint;
   };
   const hasConditions = (value: SymbolicValue): boolean =>
     symbolicVariants(value).some((variant) => variant.conditions?.length);
@@ -323,24 +390,20 @@ export const collectElectronWrappedCallPaths = (
               };
     // A fully observed transmission stays one source fact when its callback is
     // traced. Registrations retain invocation identity because handlers compete.
-    const duplicate = accumulator.ipc.some(
-      ({ value }) =>
-        value.side === finding.side &&
-        value.operation === finding.operation &&
-        value.channel === channel &&
-        JSON.stringify(value.location) === JSON.stringify(location) &&
-        ((value.resolution_basis === undefined &&
-          (value.mode === "send" || value.mode === "invoke")) ||
-          JSON.stringify(value.invocation_location) ===
-            JSON.stringify(invocationLocation)),
-    );
+    const recorded = ipcAtEndpoint().get(ipcEndpointKey(finding));
+    const duplicate =
+      recorded !== undefined &&
+      (recorded.observedTransmission ||
+        recorded.invocations.has(ipcInvocationKey(invocationLocation)));
     const findingGuarded =
       context.conditions.length > 0 || hasConditions(first) || guardedDispatch;
     if (!duplicate && !findingGuarded) {
-      accumulator.ipc.push({
-        offset: node.start ?? -1,
-        value: { ...finding, resolution_basis: "wrapper-substitution" },
-      });
+      const value: ElectronIpcFinding = {
+        ...finding,
+        resolution_basis: "wrapper-substitution",
+      };
+      accumulator.ipc.push({ offset: node.start ?? -1, value });
+      indexIpcFinding(ipcAtEndpoint(), value);
       if (descriptor.mode !== "send" && descriptor.mode !== "invoke" && !fn)
         accumulator.unknownFindings += 1;
     } else if (findingGuarded) accumulator.unknownFindings += 1;
@@ -409,7 +472,12 @@ export const collectElectronWrappedCallPaths = (
       api_key_expression: null,
       api_status: "dynamic" as const,
       resolution_basis: "wrapper-substitution" as const,
-      members,
+      // The direct syntax pass recursively retains literal dotted paths. The
+      // symbolic resolver enumerates only immediate object keys, so its
+      // replacement must not erase paths already established at this call.
+      members: [
+        ...new Set([...(existing?.value.members ?? []), ...members]),
+      ].sort(compareUnicodeCodePoints),
       unknown_members: resolver.unknownMembers(object),
       module_key: null,
       location,
@@ -447,7 +515,9 @@ export const collectElectronWrappedCallPaths = (
       const entry = `${key.value}.${name}`;
       functionBody(
         fn,
-        fn.node.params.map(() => symbolicUnknown("public API argument")),
+        runtimeFunctionParameters(fn.node).map(() =>
+          symbolicUnknown("public API argument"),
+        ),
         {
           ...memberContext,
           entryNode: node,
@@ -525,21 +595,9 @@ export const collectElectronWrappedCallPaths = (
       let next = context;
       for (const statement of node.body) {
         walk(statement, env, next);
-        if (symbolicDefiniteExit(statement)) break;
-        if (t.isIfStatement(statement)) {
-          const truth = symbolicTruth(resolver.evaluate(statement.test, env));
-          if (truth !== undefined) {
-            if (
-              symbolicDefiniteExit(
-                truth ? statement.consequent : statement.alternate,
-              )
-            )
-              break;
-          } else if (symbolicDefiniteExit(statement.consequent))
-            next = condition(next, statement.test, false);
-          else if (symbolicDefiniteExit(statement.alternate))
-            next = condition(next, statement.test);
-        }
+        const fallthrough = sequentialFallthrough(statement, env, next);
+        if (!fallthrough.continues) break;
+        next = fallthrough.context;
       }
       return;
     }
@@ -630,13 +688,17 @@ export const collectElectronWrappedCallPaths = (
           const index = parent.body.findIndex(
             (statement) => statement === child,
           );
-          if (
-            index >= 0 &&
-            parent.body
-              .slice(0, index)
-              .some((statement) => symbolicDefiniteExit(statement))
-          )
-            return;
+          if (index >= 0) {
+            for (const statement of parent.body.slice(0, index)) {
+              const fallthrough = sequentialFallthrough(
+                statement,
+                env,
+                context,
+              );
+              if (!fallthrough.continues) return;
+              context = fallthrough.context;
+            }
+          }
         }
       }
       call(node, env, context, isolatedSeed?.callee);

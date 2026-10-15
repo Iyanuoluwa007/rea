@@ -7,6 +7,10 @@ This passive runtime surface is distinct from the target-free static
 workflow. Static analysis reads a local ASAR or extracted directory without
 executing application code. Passive observation inspects an existing Electron
 page. The results keep static inferences and runtime observations distinct.
+Packaged fuse state is a separate static read:
+[`inspect_electron_fuses`](electron-fuses.md) reports whether this binary will
+honor Inspector flags, `ELECTRON_RUN_AS_NODE`, embedded ASAR integrity, and
+`app.asar`-only loading.
 Use the separate
 [`reconcile_javascript_runtime`](javascript-runtime-reconciliation.md) workflow
 when both Evidence sets already exist.
@@ -111,6 +115,12 @@ path. A configured path or working IPC handler does not prove preload execution.
 If cleanup cannot be verified, the error retains collected observations in
 `details.partial_observation` and marks their application cleanup `unverified`.
 Cleanup uncertainty does not authorize signaling unrelated processes.
+
+### Target fuse prerequisites
+
+Active scenario capture requires that the target Electron executable honors Node CLI inspector flags (`--inspect` or `--remote-debugging-port`) so that Playwright can establish its DevTools protocol session.
+
+When an Electron executable explicitly disables the `EnableNodeCliInspectArguments` fuse (or removes the capability), `capture-electron-scenario` fails immediately before process launch with an `AnalysisUnsupportedTargetError` ("unsupported_target") rather than waiting for the startup deadline. For targets with disabled inspector fuses, use passive CDP inspection via `inspect_electron_page` or run against an unrestricted development binary with the extracted `app.asar`.
 
 The real verifier exercises compiled CLI and stdio MCP discovery, page/script
 inspection, static/runtime reconciliation, active observation, and CLI SIGTERM

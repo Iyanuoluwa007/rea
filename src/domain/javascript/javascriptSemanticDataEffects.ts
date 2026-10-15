@@ -1,7 +1,5 @@
 import * as t from "@babel/types";
 
-import { semanticBuiltinNamespacePath } from "./javascriptSemanticProvenance.js";
-
 import type {
   JavaScriptSemanticBoundaryOperation,
   JavaScriptSemanticCallable,
@@ -140,12 +138,12 @@ const processConfigurationMember = (
   const object = node.object;
   if (!t.isMemberExpression(object) && !t.isOptionalMemberExpression(object))
     return null;
-  if (!isProcessObject(object.object, state)) return null;
   const family = semanticStaticPropertyName(object.property, object.computed);
   if (family !== "env" && family !== "argv") return null;
   // `process.env[""]` names an exact (empty) key; only a dynamic key is unknown.
   const key = semanticStaticPropertyKey(node.property, node.computed);
   if (family === "argv" && key !== null && !isArrayIndexKey(key)) return null;
+  if (!isProcessObject(object.object, state, family, key)) return null;
   return {
     kind: family === "env" ? "environment" : "argv",
     key,
@@ -272,6 +270,18 @@ const collectResponseConsumers = (
         ? []
         : (requestsByBinding.get(binding.bindingId) ?? []);
     if (linked.length === 0) return;
+    // A consumer of exactly one request through its own result binding
+    // reads that request's response, so it keeps the request's endpoint.
+    const uniqueRequest =
+      linked.length === 1 &&
+      !linked[0]?.operation.projectedResultBindings.some(
+        ({ bindingId }) => bindingId === binding?.bindingId,
+      )
+        ? linked[0]
+        : undefined;
+    // Any other write (assignment, update, loop or destructuring target) can
+    // replace the response before this read, so its endpoint stays unknown.
+    const soleWrite = binding?.initializers.length === 1;
     output.push({
       requestId: `response:${String(node.start ?? -1)}:${String(node.end ?? -1)}`,
       kind: "response-consumer",
@@ -289,15 +299,9 @@ const collectResponseConsumers = (
       linkedRequestIds: linked
         .map(({ operation }) => operation.requestId)
         .sort(compareUnicodeCodePoints),
-      endpoint: null,
+      endpoint: soleWrite ? (uniqueRequest?.operation.endpoint ?? null) : null,
       fields: [],
-      resolution:
-        linked.length === 1 &&
-        !linked[0]?.operation.projectedResultBindings.some(
-          ({ bindingId }) => bindingId === binding?.bindingId,
-        )
-          ? "complete"
-          : "partial",
+      resolution: uniqueRequest === undefined ? "partial" : "complete",
     });
   });
   return output;
@@ -375,22 +379,13 @@ const requestMethod = (
     if (t.isNewExpression(node) && unbound && name === "WebSocket")
       return "WebSocket";
   }
-  const member = memberCallee(node);
-  if (member === null || !t.isIdentifier(member.object)) return null;
-  const method = semanticStaticPropertyName(member.property, member.computed);
-  if (method !== "request" && method !== "get") return null;
-  const binding = resolveSemanticBindingState(
-    state,
-    member.object,
-    member.object.name,
-  );
-  return binding?.directOrigins.some(
-    ({ specifier, importedPath }) =>
-      ["http", "https", "node:http", "node:https"].includes(specifier) &&
-      semanticBuiltinNamespacePath(importedPath),
-  )
-    ? method
-    : null;
+  const method = builtinMethod(node.callee, state, [
+    "http",
+    "https",
+    "node:http",
+    "node:https",
+  ]);
+  return method === "request" || method === "get" ? method : null;
 };
 
 const requestFields = (

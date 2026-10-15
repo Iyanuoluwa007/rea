@@ -7,7 +7,10 @@ import { artifactComparisonResultSchema } from "./artifactComparison.js";
 import { artifactInventoryResultSchema } from "./artifactGraph.js";
 import { uniqueSorted } from "./canonicalOrdering.js";
 import { compareUnicodeCodePoints } from "./unicodeCodePointOrder.js";
-import { comparisonSourceEvidenceSides } from "./comparisonSourceEvidence.js";
+import {
+  comparisonSourceEvidenceSides,
+  assertComparisonFindingLinks,
+} from "./comparisonSourceEvidence.js";
 import { parseEvidence, type Evidence } from "./evidence.js";
 import { parseEvidenceBundle } from "./evidenceBundle.js";
 import { functionComparisonResultSchema } from "./functionComparisonSchemas.js";
@@ -16,7 +19,7 @@ import {
   isProcessEvidenceProvider,
 } from "./process/processEvidenceProvider.js";
 import { functionDossierSchema } from "./hopperValues.js";
-import { functionCallCoverageLimitations } from "./functionCallCoverage.js";
+import { assessFunctionCallCoverage } from "./functionCallCoverage.js";
 import {
   deriveProcessComparisonStatus,
   PROCESS_COMPARISON_DIMENSIONS,
@@ -61,7 +64,8 @@ const providers = {
 
 interface FunctionSourceFacts {
   readonly evidence_id: string;
-  readonly callCoverageLimitations: readonly string[];
+  readonly callCoverageBlockers: readonly string[];
+  readonly callCoverageDiagnostics: readonly string[];
 }
 
 const acceptsPredicate = (
@@ -146,13 +150,14 @@ const evaluateClaim = (
   const functionSourceFacts = readValidatedSourceFacts(claim, sources);
   const observation = comparisonObservation(claim, comparison);
   const observed = observation.status;
-  const limitations = [
+  const callCoverage = sourceCallCoverage(
+    claim,
+    functionSourceFacts,
+    observation.hasIndependentFunctionChange === true,
+  );
+  const blockers = [
     ...authorityLimitations(claim, sources, sides),
-    ...sourceCallCoverageLimitations(
-      claim,
-      functionSourceFacts,
-      observation.hasIndependentFunctionChange === true,
-    ),
+    ...callCoverage.blockers,
   ];
   const relatedUnknowns = reconstructionClaimUnknowns(
     heads,
@@ -161,7 +166,7 @@ const evaluateClaim = (
     claim.dimension,
   );
   const relevantUnknowns = relatedUnknowns;
-  const status = classify(observed, limitations, relevantUnknowns);
+  const status = classify(observed, blockers, relevantUnknowns);
   const displayedUnknowns = relevantUnknowns;
   return reconstructionClaimResultSchema.parse({
     claim_id: claim.claim_id,
@@ -176,7 +181,9 @@ const evaluateClaim = (
     unknown_ids: displayedUnknowns.map(({ unknown_id: id }) => id),
     limitations: uniqueSorted([
       ...comparison.limitations,
-      ...limitations,
+      ...observation.limitations,
+      ...blockers,
+      ...callCoverage.diagnostics,
       ...displayedUnknowns.map(
         ({ question }) => `Residual unknown: ${question}`,
       ),
@@ -210,12 +217,14 @@ const readValidatedSourceFacts = (
       parseProcessCapture(source.normalized_result);
     else if (claim.kind === "structural-function") {
       const dossier = functionDossierSchema.parse(source.normalized_result);
+      const callCoverage = assessFunctionCallCoverage(
+        source.relationship_coverage,
+        dossier,
+      );
       functionSources.push({
         evidence_id: source.evidence_id,
-        callCoverageLimitations: functionCallCoverageLimitations(
-          source.relationship_coverage,
-          dossier,
-        ),
+        callCoverageBlockers: callCoverage.blockers,
+        callCoverageDiagnostics: callCoverage.diagnostics,
       });
     } else artifactInventoryResultSchema.parse(source.normalized_result);
   }
@@ -245,6 +254,7 @@ const comparisonObservation = (
   evidence: Evidence,
 ): {
   readonly status: ObservedStatus;
+  readonly limitations: readonly string[];
   readonly hasIndependentFunctionChange?: boolean;
 } => {
   if (claim.kind === "behavioral") {
@@ -255,16 +265,26 @@ const comparisonObservation = (
     return {
       status:
         claim.dimension === "overall" ? result.status : result[claim.dimension],
+      limitations: [],
     };
   }
   if (claim.kind === "structural-function") {
     const result = functionComparisonResultSchema.parse(
       evidence.normalized_result,
     );
+    assertComparisonFindingLinks(
+      evidence,
+      result.dimensions.flatMap(({ evidence_links }) => evidence_links),
+    );
     if (claim.dimension === "overall")
       return {
         status: result.status,
-        // Historical overall changes may come solely from incomplete call sets.
+        limitations: result.dimensions.flatMap(
+          ({ limitations }) => limitations,
+        ),
+        // Historical overall changes can be caused only by incomplete call
+        // sets. Ignore that aggregate change when independently checking the
+        // source call-coverage limitations.
         hasIndependentFunctionChange:
           result.function_match.status === "mismatched" ||
           (result.function_match.status === "matched" &&
@@ -279,28 +299,16 @@ const comparisonObservation = (
     );
     if (dimension === undefined)
       throw new TypeError("Function comparison dimension missing");
-    if (
-      dimension.evidence_links.some(
-        (id) => !evidence.evidence_links.includes(id),
-      )
-    )
-      throw new TypeError(
-        "Function dimension cites Evidence outside comparison closure",
-      );
-    return { status: dimension.status };
+    return { status: dimension.status, limitations: dimension.limitations };
   }
   const result = artifactComparisonResultSchema.parse(
     evidence.normalized_result,
   );
-  if (
-    result.changes.some((item) =>
-      item.evidence_links.some((id) => !evidence.evidence_links.includes(id)),
-    )
-  )
-    throw new TypeError(
-      "Artifact change cites Evidence outside comparison closure",
-    );
-  return { status: result.status };
+  assertComparisonFindingLinks(
+    evidence,
+    result.changes.flatMap(({ evidence_links }) => evidence_links),
+  );
+  return { status: result.status, limitations: [] };
 };
 
 const validateProcessStatus = (
@@ -346,13 +354,15 @@ const authorityLimitations = (
   )
     limitations.push("Structural source artifact identity is unavailable.");
   if (claim.kind === "behavioral") {
-    const byId = new Map(sources.map((source) => [source.evidence_id, source]));
-    const left = byId.get(sides.left[0] ?? "");
-    const right = byId.get(sides.right[0] ?? "");
+    const referenceEnvironment = sources[0]?.environment;
     if (
-      left?.environment === null ||
-      right?.environment === null ||
-      JSON.stringify(left?.environment) !== JSON.stringify(right?.environment)
+      referenceEnvironment === null ||
+      referenceEnvironment === undefined ||
+      sources.some(
+        ({ environment }) =>
+          environment === null ||
+          JSON.stringify(environment) !== JSON.stringify(referenceEnvironment),
+      )
     )
       limitations.push(
         "Controlled replay environments are unavailable or incompatible.",
@@ -361,20 +371,28 @@ const authorityLimitations = (
   return limitations;
 };
 
-const sourceCallCoverageLimitations = (
+const sourceCallCoverage = (
   claim: Claim,
   functionSources: readonly FunctionSourceFacts[],
   hasIndependentFunctionChange: boolean,
-): string[] => {
+): { blockers: string[]; diagnostics: string[] } => {
   if (
     claim.kind !== "structural-function" ||
     (claim.dimension !== "calls" &&
       !(claim.dimension === "overall" && !hasIndependentFunctionChange))
   )
-    return [];
-  return functionSources.flatMap(({ evidence_id, callCoverageLimitations }) =>
-    callCoverageLimitations.map((reason) => `Source ${evidence_id}: ${reason}`),
-  );
+    return { blockers: [], diagnostics: [] };
+  return {
+    blockers: functionSources.flatMap(({ evidence_id, callCoverageBlockers }) =>
+      callCoverageBlockers.map((reason) => `Source ${evidence_id}: ${reason}`),
+    ),
+    diagnostics: functionSources.flatMap(
+      ({ evidence_id, callCoverageDiagnostics }) =>
+        callCoverageDiagnostics.map(
+          (reason) => `Source ${evidence_id}: ${reason}`,
+        ),
+    ),
+  };
 };
 
 const classify = (
