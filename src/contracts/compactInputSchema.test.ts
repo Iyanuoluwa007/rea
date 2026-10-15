@@ -364,14 +364,28 @@ it("gives every advertised array type an item schema for strict clients", () => 
       )
     );
   };
-  for (const budget of [13312, 64]) {
-    const { schema } = compactAdvertisedInputSchema(
+  // A large nested property forces the reduced form at 1 KiB while the
+  // shallow properties, including the array, remain advertised.
+  for (const [budget, expected] of [
+    [13312, "inline"],
+    [1024, "reduced"],
+  ] as const) {
+    const { schema, presentation } = compactAdvertisedInputSchema(
       {
         type: "object",
-        properties: { value: {}, values: { type: "array", items: {} } },
+        properties: {
+          capture: budget === 1024 ? oversizedPairSchema() : {},
+          value: {},
+          values: { type: "array", items: {} },
+        },
       },
       budget,
     );
+    expect(presentation, String(budget)).toBe(expected);
+    expect(
+      (schema.properties as Record<string, unknown>).values,
+      String(budget),
+    ).toMatchObject({ type: "array", items: expect.any(Object) });
     expect(arraysWithoutItems(schema), String(budget)).toBe(0);
   }
 });
