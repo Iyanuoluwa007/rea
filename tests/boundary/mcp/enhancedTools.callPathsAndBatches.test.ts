@@ -470,6 +470,47 @@ describe("enhanced MCP batches", () => {
     });
   });
 
+  it("reports a provider's null pseudocode as unavailable, not unreadable", async () => {
+    const client = await connect({
+      execute: async (name, arguments_) =>
+        name === "procedure_address"
+          ? ok(String(arguments_.procedure))
+          : name === "address_name"
+            ? ok(null)
+            : ok(arguments_.procedure === "0x1" ? null : ""),
+    });
+
+    const result = await client.callTool({
+      name: "batch_decompile",
+      arguments: { addresses: ["0x1", "0x2"] },
+    });
+
+    expect(result.isError).not.toBe(true);
+    expect(jsonResult(result)).toMatchObject({
+      items: [
+        {
+          address: "0x1",
+          status: "error",
+          error: {
+            code: "capability_unavailable",
+            retryable: false,
+            message:
+              "The provider reports no pseudocode for this procedure; the batch limitations for procedure_pseudo_code say why.",
+          },
+        },
+        // An empty string is still output no provider should produce.
+        {
+          address: "0x2",
+          status: "error",
+          error: { code: "unreadable_output" },
+        },
+      ],
+      total: 2,
+      succeeded: 0,
+      failed: 2,
+    });
+  });
+
   it("returns ordered typed batch failures and zero counts for empty input", async () => {
     const client = await connect({
       execute: async (name, arguments_) =>

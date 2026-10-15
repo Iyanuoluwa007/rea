@@ -95,6 +95,46 @@ const firstAnalysisCancellation = <Value>(
  * Direct callers use `execute`; adapters that own validation use
  * `executeValidated` so an MCP input is parsed exactly once.
  */
+
+const NO_PSEUDOCODE =
+  "The provider reports no pseudocode for this procedure; the batch limitations for procedure_pseudo_code say why.";
+
+/** One batch item from its pseudocode observation, keeping null distinct from unreadable output. */
+const batchPseudocodeItem = (
+  address: string,
+  procedure: BatchProcedureIdentity,
+  observed: Result<AnalysisExecution, AnalysisError>,
+): BatchDecompileItem => {
+  const failed = (error: AnalysisError): BatchDecompileItem => ({
+    address,
+    procedure,
+    status: "error",
+    error: projectAnalysisError(error),
+  });
+  if (!observed.ok) return failed(observed.error);
+  const pseudocode = observed.value.result;
+  // The contract's null is the provider's own answer that this procedure has
+  // no pseudocode (an import slot, a failed body); the provider's reason is
+  // in the batch limitations, so it is not reported as unreadable output.
+  if (pseudocode === null)
+    return failed(
+      new AnalysisCapabilityUnavailableError(
+        observed.value.provider.id,
+        "procedure_pseudo_code",
+        NO_PSEUDOCODE,
+        { userMessage: NO_PSEUDOCODE },
+      ),
+    );
+  if (typeof pseudocode !== "string" || pseudocode.length === 0)
+    return failed(
+      new AnalysisOutputError(
+        "procedure_pseudo_code",
+        "provider returned empty pseudocode",
+      ),
+    );
+  return { address, procedure, status: "ok", pseudocode };
+};
+
 export class EnhancedTools {
   constructor(private readonly analysis: AnalysisOperationPort) {}
 
@@ -375,7 +415,7 @@ export class EnhancedTools {
   ): Promise<Result<BatchDecompileItem, AnalysisCancelledError>[]> {
     return Promise.all(
       ready.map(async ({ address, procedure, providerProcedure }) => {
-        const result = await this.#call(
+        const result = await this.#observe(
           "procedure_pseudo_code",
           { procedure: providerProcedure },
           signal,
@@ -383,32 +423,7 @@ export class EnhancedTools {
         );
         if (!result.ok && isAnalysisCancellation(result.error))
           return err(result.error);
-        const item: BatchDecompileItem = !result.ok
-          ? {
-              address,
-              procedure,
-              status: "error",
-              error: projectAnalysisError(result.error),
-            }
-          : typeof result.value !== "string" || result.value.length === 0
-            ? {
-                address,
-                procedure,
-                status: "error",
-                error: projectAnalysisError(
-                  new AnalysisOutputError(
-                    "procedure_pseudo_code",
-                    "provider returned empty pseudocode",
-                  ),
-                ),
-              }
-            : {
-                address,
-                procedure,
-                status: "ok",
-                pseudocode: result.value,
-              };
-        return ok(item);
+        return ok(batchPseudocodeItem(address, procedure, result));
       }),
     );
   }
