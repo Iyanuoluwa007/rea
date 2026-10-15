@@ -70,8 +70,8 @@ it.skipIf(process.platform !== "darwin")(
             .split(/\s+/u)
             .map(Number);
           break;
-        } catch (cause) {
-          if (cause.code !== "ENOENT") throw cause;
+        } catch (cause: unknown) {
+          if ((cause as NodeJS.ErrnoException).code !== "ENOENT") throw cause;
           await new Promise((resolve) => setTimeout(resolve, 20));
         }
       }
