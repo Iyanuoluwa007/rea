@@ -13,6 +13,7 @@ import {
   type JavaScriptSemanticAnalysisState,
   type JavaScriptSemanticBindingState,
 } from "./javascriptSemanticState.js";
+import { createSemanticThisReceivers } from "./javascriptSemanticThisReceivers.js";
 import { traverseJavaScriptAst } from "./javascriptSemanticTraversal.js";
 import { range } from "./javascriptStaticAnalysisHelpers.js";
 import {
@@ -91,7 +92,12 @@ export const collectJavaScriptSemanticAsyncEffects = (
   state: JavaScriptSemanticAnalysisState,
   callables: readonly JavaScriptSemanticCallable[],
 ): AsyncEffectAnalysis => {
-  const events: JavaScriptSemanticEventOperation[] = [];
+  const events: EventCollection = {
+    state,
+    receivers: createSemanticThisReceivers(state),
+    output: [],
+    classReceivers: new Map(),
+  };
   const timers: TimerCandidate[] = [];
   const callableIds = new Set(callables.map(({ callableId }) => callableId));
   const callableStack = createSemanticCallableIdStack(callableIds);
@@ -99,9 +105,10 @@ export const collectJavaScriptSemanticAsyncEffects = (
   traverseJavaScriptAst(program, {
     enter: (node, parent) => {
       callableStack.enter(node, parent);
+      if (t.isClass(node)) events.receivers.record(node);
       if (t.isCallExpression(node) || t.isOptionalCallExpression(node)) {
         const ownerCallableId = callableStack.callables.at(-1) ?? null;
-        collectEvent(node, ownerCallableId, state, events);
+        collectEvent(node, ownerCallableId, events);
         collectTimer({
           node,
           ownerCallableId,
@@ -118,17 +125,43 @@ export const collectJavaScriptSemanticAsyncEffects = (
     },
   });
   return {
-    eventOperations: events,
+    eventOperations: resolveClassReceiverEvents(events),
     timerOperations: resolveTimers(timers),
   };
 };
 
+interface EventCollection {
+  readonly state: JavaScriptSemanticAnalysisState;
+  readonly receivers: ReturnType<typeof createSemanticThisReceivers>;
+  readonly output: JavaScriptSemanticEventOperation[];
+  /** Class receivers, whose exactness is known once every class is recorded. */
+  readonly classReceivers: Map<
+    JavaScriptSemanticEventOperation,
+    t.ClassDeclaration | t.ClassExpression
+  >;
+}
+
+/** A class receiver shared by several local classes is only a candidate. */
+const resolveClassReceiverEvents = ({
+  output,
+  receivers,
+  classReceivers,
+}: EventCollection): JavaScriptSemanticEventOperation[] =>
+  output.map((operation) => {
+    const klass = classReceivers.get(operation);
+    return klass === undefined ||
+      operation.resolution !== "complete" ||
+      receivers.exact(klass)
+      ? operation
+      : { ...operation, resolution: "partial" };
+  });
+
 const collectEvent = (
   node: t.CallExpression | t.OptionalCallExpression,
   ownerCallableId: string | null,
-  state: JavaScriptSemanticAnalysisState,
-  output: JavaScriptSemanticEventOperation[],
+  collection: EventCollection,
 ): void => {
+  const { state, output } = collection;
   const member = dataEffectMemberCallee(node);
   if (member === null) return;
   const method = EVENT_METHODS.find(
@@ -142,9 +175,9 @@ const collectEvent = (
   const listenerArgument = EVENT_LISTENER_METHODS.includes(method)
     ? node.arguments[1]
     : undefined;
-  const emitter = emitterIdentity(member.object, state);
+  const emitter = emitterIdentity(member.object, collection);
   const eventName = dataEffectLiteralString(eventArgument);
-  output.push({
+  const operation: JavaScriptSemanticEventOperation = {
     eventId: `event:${kind}:${String(node.start ?? -1)}:${String(node.end ?? -1)}`,
     kind,
     method,
@@ -163,7 +196,10 @@ const collectEvent = (
         : emitter.complete
           ? "complete"
           : "partial",
-  });
+  };
+  output.push(operation);
+  if (emitter.klass !== null)
+    collection.classReceivers.set(operation, emitter.klass);
 };
 
 const eventKind = (
@@ -178,11 +214,12 @@ const eventKind = (
 
 const emitterIdentity = (
   node: t.Expression | t.Super,
-  state: JavaScriptSemanticAnalysisState,
+  { state, receivers }: EventCollection,
 ): {
   readonly key: string;
   readonly bindingId: string | null;
   readonly complete: boolean;
+  readonly klass: t.ClassDeclaration | t.ClassExpression | null;
 } => {
   if (t.isIdentifier(node)) {
     const binding = resolveSemanticBindingState(state, node, node.name);
@@ -191,19 +228,23 @@ const emitterIdentity = (
         key: `binding:${binding.bindingId}`,
         bindingId: binding.bindingId,
         complete: true,
+        klass: null,
       };
     return {
       key: `global:${node.name}`,
       bindingId: null,
       complete: !semanticResolutionBlocked(state, node, node.name),
+      klass: null,
     };
   }
+  // Each binder of `this` supplies its own receiver.
   if (t.isThisExpression(node))
-    return { key: "this", bindingId: null, complete: true };
+    return { ...receivers.receiver(node), bindingId: null, complete: true };
   return {
     key: `expression:${String(node.start ?? -1)}:${String(node.end ?? -1)}`,
     bindingId: null,
     complete: false,
+    klass: null,
   };
 };
 
