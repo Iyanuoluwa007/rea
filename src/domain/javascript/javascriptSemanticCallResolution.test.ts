@@ -82,7 +82,7 @@ it("bounds shared partial callback alias expansion by AST size", () => {
   expect(large.referenceReads).toBeLessThan(3 * small.referenceReads);
 });
 
-it("closes reassignment meshes at bindings whose reads select every write", () => {
+it("bounds reassignment meshes by write pairs when reads select every write", () => {
   const measure = (writes: number) => {
     const context = indexed(`function f(){} function g(){} let a = f, b = g;
       function run(){ ${Array.from({ length: writes }, (_, i) => (i % 2 === 0 ? "a=b;" : "b=a;")).join("")} a(); }`);

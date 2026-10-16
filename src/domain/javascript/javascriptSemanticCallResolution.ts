@@ -108,8 +108,8 @@ const resolveIdentifier = (
   );
   // A read that selects every initializer resolves the same candidates
   // wherever the chain re-enters it, and a longer chain can only cut more of
-  // them, so re-entry adds no target. Closing that cycle at the binding keeps
-  // alias meshes linear instead of enumerating every initializer order.
+  // them, so re-entry adds no target. Closing that cycle at the binding bounds
+  // an alias mesh by pairs of writes instead of every initializer order.
   // Position-narrowed reads keep their per-initializer cycles.
   const selectsAll = read.binding === binding;
   if (selectsAll && context.seenBindings.has(binding))
