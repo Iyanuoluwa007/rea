@@ -224,7 +224,8 @@ export const relativePointerSchema = z.strictObject({
 /** A raw Swift-mangled symbol when a provider has not decoded its metadata. */
 export const swiftSymbolSchema = z.strictObject({
   mangled_name: z.string().min(1),
-  address: z.string().min(1),
+  /** Null when the provider inventory names the symbol without an address. */
+  address: z.string().min(1).nullable(),
   decode: nativeMetadataDecodeSchema,
   evidence: z.array(nativeMetadataEvidenceSchema).min(1),
 });
@@ -333,7 +334,7 @@ export const inspectNativeDispatchMetadata = (
   names: readonly { readonly address: string; readonly name: string }[],
   maxRecords = 5_000,
 ): ObjcSwiftMetadata => {
-  const symbolEvidence = (name: string, address: string) => [
+  const symbolEvidence = (name: string, address: string | null) => [
     {
       kind: "symbol" as const,
       description: `Provider symbol ${name}`,
@@ -348,6 +349,8 @@ export const inspectNativeDispatchMetadata = (
 
   const examinedNames = names.slice(0, maxRecords);
   for (const entry of examinedNames) {
+    // An empty provider address is an unknown location, not an address.
+    const address = entry.address === "" ? null : entry.address;
     const classMatch = /(?:OBJC_CLASS_|OBJC_METACLASS_)\$_([^\s]+)/u.exec(
       entry.name,
     );
@@ -361,10 +364,10 @@ export const inspectNativeDispatchMetadata = (
         class_name: methodMatch[2],
         selector,
         method_type: methodType,
-        implementation_address: entry.address,
-        location: { address: entry.address, file_offset: null },
+        implementation_address: address,
+        location: { address, file_offset: null },
         decode: { status: "partial", reason: "symbol_name_only" },
-        evidence: symbolEvidence(entry.name, entry.address),
+        evidence: symbolEvidence(entry.name, address),
       });
       classNames.add(methodMatch[2]);
     }
@@ -372,9 +375,9 @@ export const inspectNativeDispatchMetadata = (
     if (isSwiftMangledSymbolName(entry.name) || entry.name.startsWith("_Tt"))
       swiftSymbols.push({
         mangled_name: entry.name,
-        address: entry.address,
+        address,
         decode: { status: "partial", reason: "mangled_symbol_not_demangled" },
-        evidence: symbolEvidence(entry.name, entry.address),
+        evidence: symbolEvidence(entry.name, address),
       });
   }
 
