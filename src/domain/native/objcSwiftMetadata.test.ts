@@ -74,4 +74,31 @@ describe("ObjC/Swift metadata", () => {
       }),
     );
   });
+
+  it("reports symbols named without an address as unlocated", () => {
+    const result = inspectNativeDispatchMetadata([
+      { address: "", name: "$s4Test7MyClassC" },
+      { address: "", name: "-[StoreController buildTapped:]" },
+      { address: "ram:0x3000", name: "$s5Store7launchyyF" },
+    ]);
+    expect(result.swift_symbols).toMatchObject([
+      {
+        mangled_name: "$s4Test7MyClassC",
+        address: null,
+        evidence: [{ location: { address: null } }],
+      },
+      { mangled_name: "$s5Store7launchyyF", address: "ram:0x3000" },
+    ]);
+    expect(result.objc_dispatch_implementations).toMatchObject([
+      {
+        class_name: "StoreController",
+        selector: "buildTapped:",
+        implementation_address: null,
+        location: { address: null },
+      },
+    ]);
+    expect(result.objc_classes[0]?.methods).toMatchObject([
+      { selector: "buildTapped:", address: null },
+    ]);
+  });
 });
