@@ -519,6 +519,39 @@ describe("malformed Apple dispatch metadata", () => {
     ).toMatchObject({ status: "partial", examined: 3 });
   });
 
+  it("reports an empty ivar name without discarding the class or its other ivars", () => {
+    const bytes = fixture();
+    bytes.writeUInt32LE(2, 0x504);
+    // The first ivar names an empty string; the second is the valid ivar.
+    bytes.writeBigUInt64LE(base + 0x5b0n, 0x510);
+    bytes.writeBigUInt64LE(base + 0x580n, 0x528);
+    bytes.writeBigUInt64LE(base + 0x5a0n, 0x530);
+    bytes.writeBigUInt64LE(base + 0x5c0n, 0x538);
+    const result = decodeAppleDispatchMetadata(bytes, 100, provenance);
+    expect(result.objc_ivars).toMatchObject([
+      {
+        class_name: "Fixture",
+        name: "state",
+        location: { file_offset: 0x528 },
+      },
+    ]);
+    expect(result.objc_classes.map(({ name }) => name)).toEqual([
+      "Fixture",
+      "Fixture",
+    ]);
+    expect(result.objc_classes[0]).toMatchObject({ ivar_count: 2 });
+    expect(
+      result.coverage.find(
+        ({ facet }) => facet === "objc_class_method_ivar_metadata",
+      ),
+    ).toMatchObject({
+      status: "partial",
+      reason: expect.stringContaining(
+        "Objective-C ivar 0 of Fixture at 0x100000508 has an empty name",
+      ),
+    });
+  });
+
   it("retains valid Swift class vtable siblings when one descriptor has an empty class name", () => {
     const bytes = Buffer.alloc(4096);
     const base = 0x100000000n;
