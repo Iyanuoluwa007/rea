@@ -93,8 +93,10 @@ it("bounds reassignment meshes by write pairs when reads select every write", ()
       throw new Error("Missing call");
     const reads = vi.spyOn(context.bindingCache, "get");
     const result = context.resolve(last.expression.callee);
-    expect(result).toMatchObject({ complete: false });
-    expect(result.callableIds).toHaveLength(2);
+    expect(result).toMatchObject({ complete: false, cycleDependent: true });
+    expect(
+      result.callableIds.map((id) => context.callableById.get(id)?.name).sort(),
+    ).toEqual(["f", "g"]);
     return reads.mock.calls.length;
   };
   const small = measure(6);
