@@ -215,6 +215,38 @@ it("keeps an escaped URL object partial", () => {
   });
 });
 
+it("checks member effects for stable targets beside parameter targets", () => {
+  expect(
+    endpoints(`
+        const load = (url) => fetch(url);
+        const target = "/items";
+        const socket = new URL("wss://old.example.test/socket");
+        configure(socket);
+        fetch(target);
+        fetch(socket);
+      `),
+  ).toEqual([
+    {
+      kind: "network",
+      value: "url",
+      mechanism: "call:fetch",
+      resolution: "partial",
+    },
+    {
+      kind: "network",
+      value: "/items",
+      mechanism: "call:fetch",
+      resolution: undefined,
+    },
+    {
+      kind: "network",
+      value: "socket",
+      mechanism: "call:fetch",
+      resolution: "partial",
+    },
+  ]);
+});
+
 it("retains dynamic targets on known global fetch receivers", () => {
   expect(
     endpoints(`
