@@ -58,15 +58,15 @@ export const createObjcProtocolReader = (input: {
         selector = read.pointer(selector);
       // One empty selector is reported on its own, so the protocol and its
       // other method declarations keep their decoded records.
-      const name = read.string(selector);
-      if (name.length === 0) {
+      const selectorName = read.string(selector);
+      if (selectorName.length === 0) {
         emptySelectors.push(
           `${required ? "required" : "optional"} ${instance ? "instance" : "class"} method ${String(index)} at 0x${entry.toString(16)} has an empty selector`,
         );
         continue;
       }
       output.push({
-        selector: name,
+        selector: selectorName,
         method_type: instance ? "instance" : "class",
         address: null,
         is_required: required,

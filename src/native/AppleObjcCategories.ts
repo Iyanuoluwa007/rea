@@ -50,15 +50,14 @@ export const decodeObjcCategories = (input: {
       try {
         const category = read.pointer(field);
         const name = read.string(read.pointer(category));
+        if (name.length === 0)
+          throw new TypeError("Objective-C category has an empty name");
         const external = boundClassName(read, category + 8n);
         const local = read.pointer(category + 8n);
         let className = external ?? null;
         if (external === undefined && local !== 0n)
           try {
-            const localName = input.localClassName(local);
-            if (localName.length === 0)
-              throw new TypeError("Objective-C class has an empty name");
-            className = localName;
+            className = input.localClassName(local);
           } catch (cause: unknown) {
             // The category's own name and methods do not depend on its owner;
             // keep them and report the unreadable class reference.
