@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { realpath } from "node:fs/promises";
 
 import { runKunaCommand } from "../../dist/kuna/KunaCommand.js";
+import { kunaFunctionDeadline } from "../../dist/kuna/KunaConfiguration.js";
 import { inspectKunaInstallation } from "../../dist/kuna/KunaInstallation.js";
 import { KUNA_XREF_OUTPUT_BYTES } from "../../dist/kuna/KunaReferenceFiles.js";
 
@@ -20,14 +21,14 @@ export const nativeKunaIncomingSites = async ({
   });
   assert.ok(installed.ok, "Native reference oracle could not inspect Kuna");
   const input = await realpath(binary);
-  const timeoutMs = installed.value.configuration.functionTimeoutMs;
+  const deadline = kunaFunctionDeadline(installed.value.configuration);
   const outcome = await runKunaCommand({
     installation: installed.value,
     arguments: ["xrefs", input, "--to", address, "--json"],
     workspace,
     operation: "verify:kuna-native-xrefs",
-    timeoutMs,
-    reportedTimeoutMs: timeoutMs,
+    timeoutMs: deadline.ms,
+    deadline,
     outputBytes: KUNA_XREF_OUTPUT_BYTES,
     signal: new AbortController().signal,
   });

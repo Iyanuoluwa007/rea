@@ -8,6 +8,7 @@ import type { FunctionDossier } from "../domain/hopperValues.js";
 import type { RelationshipCoverage } from "../domain/relationshipCoverage.js";
 import { ProviderAdapterError } from "../domain/providerAdapterError.js";
 import { err, ok, type Result } from "../domain/result.js";
+import { kunaProjectDeadline } from "./KunaConfiguration.js";
 import type { KunaInstallation } from "./KunaInstallation.js";
 import {
   KUNA_GRAPH_OUTPUT_BYTES,
@@ -118,7 +119,7 @@ export class KunaReferenceQueries {
                 "--functions",
                 "",
               ],
-              timeoutMs: installation.configuration.projectTimeoutMs,
+              deadline: kunaProjectDeadline(installation.configuration),
               outputBytes: KUNA_GRAPH_OUTPUT_BYTES,
               signal: producerSignal,
             });
@@ -258,7 +259,7 @@ export class KunaReferenceQueries {
             installation,
             operation: "xrefs",
             arguments: (input) => ["xrefs", input, "--to", address, "--json"],
-            timeoutMs: installation.configuration.projectTimeoutMs,
+            deadline: kunaProjectDeadline(installation.configuration),
             outputBytes: KUNA_XREF_OUTPUT_BYTES,
             signal: producerSignal,
           });

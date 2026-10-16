@@ -23,6 +23,7 @@ import {
   runKunaCommand,
   type KunaProcessLauncher,
 } from "./KunaCommand.js";
+import type { KunaDeadline } from "./KunaConfiguration.js";
 import type { KunaInstallation } from "./KunaInstallation.js";
 import { KUNA_PROVIDER_ID } from "./KunaRelease.js";
 import type { KunaRunRelease } from "./KunaRunSlots.js";
@@ -42,7 +43,7 @@ export interface KunaTargetCommandRequest {
   readonly operation: string;
   readonly arguments: (input: string) => readonly string[];
   readonly outputBytes: number;
-  readonly timeoutMs: number;
+  readonly deadline: KunaDeadline;
   readonly signal: AbortSignal;
   /** Admission remains owned until the native process is proven stopped. */
   readonly releaseRun?: KunaRunRelease;
@@ -121,7 +122,7 @@ export class KunaTargetCommands {
         ...options,
         arguments: request.arguments(workspace.value.input),
         workspace: workspace.value.root.path,
-        reportedTimeoutMs: request.timeoutMs,
+        timeoutMs: request.deadline.ms,
         launcher: this.lifetime.launcher,
       });
       if (outcome.kind === "retained") {

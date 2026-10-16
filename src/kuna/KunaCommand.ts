@@ -32,6 +32,7 @@ import {
   kunaChildEnvironment,
   type KunaInstallation,
 } from "./KunaInstallation.js";
+import type { KunaDeadline } from "./KunaConfiguration.js";
 import { KUNA_PROVIDER_ID } from "./KunaRelease.js";
 
 /**
@@ -53,9 +54,10 @@ export interface KunaCommandRequest {
   readonly workspace: string;
   /** Operation named by every failure this run reports. */
   readonly operation: string;
+  /** Time left for this run; at most the configured deadline. */
   readonly timeoutMs: number;
-  /** The deadline callers configured, reported when the run times out. */
-  readonly reportedTimeoutMs: number;
+  /** The configured deadline and its setting, reported when the run times out. */
+  readonly deadline: KunaDeadline;
   readonly outputBytes: number;
   readonly signal: AbortSignal;
   readonly launcher?: KunaProcessLauncher | undefined;
@@ -282,15 +284,22 @@ const commandFailure = (
       kind: "failed",
       error: new AnalysisCancelledError(operation, details),
     };
-  if (cause.reason === "timeout")
+  if (cause.reason === "timeout") {
+    const { setting, ms } = request.deadline;
     return {
       kind: "failed",
-      error: new AnalysisTimeoutError(
-        operation,
-        request.reportedTimeoutMs,
-        details,
-      ),
+      error: new AnalysisTimeoutError(operation, ms, {
+        ...details,
+        userMessage: `kuna ${subcommand} did not finish within ${setting} (${String(ms)} ms).`,
+        // The same run takes as long again, so only a longer deadline helps.
+        remediationAction: `Raise ${setting} in the environment that starts REA, then restart REA; it reads Kuna settings when it starts.${
+          subcommand === "decompile"
+            ? " Within a session, pseudocode is also read from the project export once it finishes."
+            : ""
+        }`,
+      }),
     };
+  }
   // The same target and executable always produce the same output, so a
   // fixed buffer it overflows is a memory bound, not a busy admission queue.
   if (cause.reason === "output-limit")

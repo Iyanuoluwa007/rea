@@ -6,6 +6,7 @@ import {
   AnalysisOutputError,
   AnalysisUnsupportedTargetError,
   AnalysisResourceConstraintError,
+  AnalysisTimeoutError,
 } from "./analysisErrorCore.js";
 import { ArtifactOperationError } from "./artifactOperationError.js";
 import {
@@ -57,6 +58,11 @@ export const analysisErrorRemediationAction = (
       error.remediationAction ??
       "Select a target supported by this operation or choose an operation supporting the reported target format."
     );
+  if (
+    error instanceof AnalysisTimeoutError &&
+    error.remediationAction !== undefined
+  )
+    return error.remediationAction;
   if (error instanceof AnalysisResourceConstraintError)
     return (
       error.remediationAction ??
