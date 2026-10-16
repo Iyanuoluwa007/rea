@@ -1040,3 +1040,45 @@ describe("malformed Objective-C protocol method lists", () => {
     });
   });
 });
+
+describe("malformed Objective-C category class references", () => {
+  it("keeps a category whose local class has an empty name", () => {
+    const bytes = fixture(false, "unmapped-class");
+    // The category names a mapped local class whose class_ro_t name is empty.
+    bytes.writeBigUInt64LE(base + 0xc00n, 0xb48);
+    bytes.writeBigUInt64LE(base + 0xc40n, 0xc20);
+    bytes.writeBigUInt64LE(base + 0xcf0n, 0xc58);
+    const result = decodeAppleDispatchMetadata(bytes, 100, provenance);
+    expect(result.objc_categories).toMatchObject([
+      {
+        name: "FixtureCategory",
+        class_name: null,
+        class_source: "unresolved",
+        decode: { status: "partial", reason: "category_class_unresolved" },
+      },
+    ]);
+    expect(result.objc_categories[0]?.instance_methods).toEqual([
+      "performAction:",
+    ]);
+    expect(result.objc_dispatch_implementations).toContainEqual(
+      expect.objectContaining({
+        category: "FixtureCategory",
+        class_name: "(FixtureCategory)",
+      }),
+    );
+    expect(result.objc_classes.map(({ name }) => name)).toEqual([
+      "Fixture",
+      "Fixture",
+    ]);
+    expect(
+      result.coverage.find(
+        ({ facet }) => facet === "objc_properties_categories",
+      ),
+    ).toMatchObject({
+      status: "partial",
+      reason: expect.stringContaining(
+        "Category FixtureCategory class reference 0x100000c00: Objective-C class has an empty name",
+      ),
+    });
+  });
+});
