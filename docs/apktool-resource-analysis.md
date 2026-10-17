@@ -62,6 +62,9 @@ select Android's `values-pt-rBR`; Android qualifiers such as `pt-rBR` and
   unparsed rather than flattened — the limitation names the count. The
   default table is bounded to 2000 entries with partial coverage when more
   exist; `locales` lists every `values-<locale>` that has a strings table.
+  A locale table whose directory also carries other qualifiers
+  (`values-en-rUS-v21`, `values-mcc310-fr`) is not listed or selectable by
+  `locale`; a limitation names each such table.
 - **Smali is skipped by design** (`apktool d --no-src`): Java-source
   recovery belongs to the JADX family. Resource smali edits and rebuild are
   a follow-up lane with mutation authority.
