@@ -31,6 +31,29 @@ const localeQualifierSchema = z
 export const androidLocaleQualifierSchema = localeQualifierSchema;
 
 /**
+ * The locale of a `values-<qualifiers>` suffix that combines a locale with
+ * other configuration qualifiers, such as `en-rUS-v21` or `b+zh+Hans+CN-night`.
+ * Android orders qualifiers so only MCC and MNC precede the locale. Returns
+ * undefined for a locale-only suffix and for suffixes without a locale.
+ */
+export const qualifiedResourceLocale = (suffix: string): string | undefined => {
+  const tokens = suffix.split("-");
+  let start = 0;
+  if (/^mcc[0-9]+$/u.test(tokens[start] ?? "")) start += 1;
+  if (/^mnc[0-9]+$/u.test(tokens[start] ?? "")) start += 1;
+  const language = tokens[start];
+  if (language === undefined) return undefined;
+  const region = tokens[start + 1];
+  const withRegion =
+    region !== undefined && /^r(?:[A-Z]{2}|[0-9]{3})$/u.test(region)
+      ? `${language}-${region}`
+      : language;
+  if (!localeQualifierSchema.safeParse(withRegion).success) return undefined;
+  const consumed = start + withRegion.split("-").length;
+  return consumed < tokens.length || start > 0 ? withRegion : undefined;
+};
+
+/**
  * Caller intent for Apktool-backed resource decoding. Apktool is
  * bring-your-own: REA never installs it, and decoding happens in a
  * provider-owned workspace that is removed after the facts are projected.

@@ -28,6 +28,7 @@ import {
 } from "../application/AnalysisProvider.js";
 import {
   androidLocaleQualifierSchema,
+  qualifiedResourceLocale,
   type ApktoolRequest,
 } from "../domain/apktool/apktoolResourceAnalysis.js";
 import {
@@ -289,12 +290,15 @@ const countDecodedFiles = async (
   count: number;
   capped: boolean;
   locales: readonly string[];
+  /** Locale strings tables whose directories carry other qualifiers too. */
+  qualifiedLocaleTables: readonly string[];
 }> => {
   let count = 0;
   let capped = false;
   let visited = 0;
   const directories = [root];
   const locales: string[] = [];
+  const qualifiedLocaleTables: string[] = [];
   while (directories.length > 0 && !capped) {
     throwIfCancelled(operation, signal);
     const directory = directories.pop()!;
@@ -309,21 +313,32 @@ const countDecodedFiles = async (
       if (entry.isDirectory()) {
         directories.push(path);
         if (directory === join(root, "res")) {
-          const match = /^values-(.+)$/u.exec(entry.name);
+          const suffix = /^values-(.+)$/u.exec(entry.name)?.[1];
+          const localeOnly =
+            suffix !== undefined &&
+            androidLocaleQualifierSchema.safeParse(suffix).success;
+          const qualified =
+            suffix !== undefined &&
+            !localeOnly &&
+            qualifiedResourceLocale(suffix) !== undefined;
           if (
-            match !== null &&
-            androidLocaleQualifierSchema.safeParse(match[1]).success &&
+            (localeOnly || qualified) &&
             (await access(join(path, "strings.xml")).then(
               () => true,
               () => false,
             ))
           )
-            locales.push(match[1]!);
+            (localeOnly ? locales : qualifiedLocaleTables).push(suffix!);
         }
       } else if (entry.isFile()) count += 1;
     }
   }
-  return { count, capped, locales: locales.sort() };
+  return {
+    count,
+    capped,
+    locales: locales.sort(),
+    qualifiedLocaleTables: qualifiedLocaleTables.sort(),
+  };
 };
 
 export interface ApktoolProviderOptions {
@@ -833,6 +848,11 @@ export class ApktoolProvider {
               ...(stringsRead.truncated
                 ? [
                     `strings.xml exceeds the ${String(STRINGS_XML_MAX_BYTES)}-byte projection budget`,
+                  ]
+                : []),
+              ...(files.qualifiedLocaleTables.length > 0
+                ? [
+                    `locales lists values-<locale> tables only; these locale strings tables also carry other configuration qualifiers and are neither listed nor selectable by locale: ${files.qualifiedLocaleTables.map((suffix) => `values-${suffix}`).join(", ")}`,
                   ]
                 : []),
               ...(files.capped

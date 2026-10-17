@@ -328,6 +328,34 @@ it("ignores Android resource qualifiers when discovering locales", async () => {
   expect(result.locales).toEqual(["de"]);
 });
 
+it("names locale tables that also carry other qualifiers (#4612)", async () => {
+  const { command, root } = await writeApktoolStub(
+    decodeStub({
+      extraValuesDirectories: [
+        "en-rUS-v21",
+        "b+zh+Hans+CN-night",
+        "pt-rBR-sw600dp",
+        "mcc310-fr",
+        "night",
+        "v21",
+      ],
+    }),
+  );
+  const apk = await apkFixture(root);
+  const result = await providerOver(command).execute({
+    operation: "decode_android_resources",
+    input: { path: apk.path, include_strings: true },
+  });
+  if (!result.ok) throw result.error;
+  expect(result.value.result).toMatchObject({
+    locales: ["de"],
+    coverage: "complete",
+  });
+  expect(result.value.limitations).toContain(
+    "locales lists values-<locale> tables only; these locale strings tables also carry other configuration qualifiers and are neither listed nor selectable by locale: values-b+zh+Hans+CN-night, values-en-rUS-v21, values-mcc310-fr, values-pt-rBR-sw600dp",
+  );
+});
+
 it.each(["car", "night", "v21"])(
   "rejects %s as a requested locale",
   (locale) => {
