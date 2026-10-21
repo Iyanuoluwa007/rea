@@ -190,7 +190,15 @@ unneeded rows out of agent context without discarding the source Evidence.
 `GameAssembly.dylib` (Mach-O), Windows `GameAssembly.dll` (64-bit PE) or
 Android `libil2cpp.so` (64-bit ELF, AArch64 or x86-64). A
 universal Mach-O needs `binary_architecture` (`arm64` or `amd64`); a thin binary
-rejects it. The file is read, never loaded or executed.
+rejects it. The selector must identify exactly one slice: when several slices map
+to the same label, such as `arm64e` and `arm64e.x1` both reading as `arm64`, REA
+refuses with `ambiguous-slice-selection` instead of picking one. To link such a
+binary, list the exact slice names with `lipo -info`, extract the intended one
+into a thin file (`lipo <universal> -thin arm64e -output <thin>`; `-thin arm64`
+does not select `arm64e`), and inspect that thin file without
+`binary_architecture`. Thinning only resolves the ambiguity: the binary must
+still match the metadata, and unsupported pointer encodings still apply. The file
+is read, never loaded or executed.
 
 A position-independent `libil2cpp.so` stores zero in most pointer slots and
 keeps the value in `R_AARCH64_RELATIVE` or `R_X86_64_RELATIVE` relocations
@@ -273,6 +281,7 @@ The builds checked are listed after the module search rules above.
 | `unsupported-container`           | unsupported | Not a 64-bit little-endian Mach-O, PE or ELF image (ELF: AArch64 or x86-64 with dynamic section). |
 | `slice-selection-required`        | unsupported | A universal Mach-O was given without `binary_architecture`.                                       |
 | `slice-not-found`                 | unsupported | The requested slice is absent, or a thin binary was given an architecture.                        |
+| `ambiguous-slice-selection`       | unsupported | More than one universal slice matches `binary_architecture`; no slice is chosen.                  |
 | `unsupported-pointer-encoding`    | unsupported | Mach-O chained fixups or Android packed (APS2) ELF relocations; pointers not decoded.             |
 | `malformed-container`             | input error | The container headers are damaged.                                                                |
 | `code-gen-modules-not-found`      | input error | An image has no module record; often a binary from a different build.                             |
