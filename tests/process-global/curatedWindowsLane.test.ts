@@ -113,14 +113,8 @@ describe("curated Windows test lane", () => {
         "src/contracts/sessionPathInputs.test.ts",
         "tests/boundary/filesystem/directAnalysisSnapshotReplay.test.ts",
         "tests/boundary/mcp/rawBinaryMcp.test.ts",
+        "tests/boundary/filesystem/windowsTargetSeparators.test.ts",
       ]),
-    );
-  });
-
-  it("keeps the Windows-only caller path separator regression in the lane", async () => {
-    // It runs only on Windows, so outside this lane CI never executes it.
-    expect(await explicitPaths("windows")).toContain(
-      "tests/boundary/filesystem/windowsTargetSeparators.test.ts",
     );
   });
 
