@@ -328,9 +328,10 @@ describe("update failures and version boundaries", () => {
     host.installResult = err("EACCES /fixture/lib/node_modules/rea-agents");
     const result = await runUpdate("3.2.1", host);
     expect(result).toMatchObject({ status: "failed", reason: "install" });
+    // docs/user-visible-errors.csv row 41 records this exact copy.
     expect(result).toHaveProperty(
       "remediation",
-      expect.stringContaining("EACCES /fixture/lib/node_modules/rea-agents"),
+      `REA could not install ${result.latestVersion} in /fixture: EACCES /fixture/lib/node_modules/rea-agents. Repair this npm installation, then rerun rea update.`,
     );
     expect(host.verifiedInstallation).toBeUndefined();
   });
